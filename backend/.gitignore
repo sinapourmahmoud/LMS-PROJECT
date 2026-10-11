@@ -1,0 +1,36 @@
+# Compiled binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/cmd/app/app
+/bin/
+
+# Go test / coverage artifacts
+*.test
+*.out
+
+# Go workspace files (only relevant if you ever use `go work`)
+go.work
+go.work.sum
+
+# Env files — these hold real secrets (DB password, JWT secret, etc.)
+.env
+.env.*
+!.env.example
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Vendored deps (remove this line if you intentionally vendor)
+vendor/
