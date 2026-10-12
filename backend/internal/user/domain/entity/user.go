@@ -15,7 +15,7 @@ const (
 )
 
 type User struct {
-	ID uuid.UUID
+	id uuid.UUID
 
 	username       string
 	email          string
@@ -25,26 +25,26 @@ type User struct {
 	updatedAt      *time.Time
 }
 
-func (u *User)GetID() uuid.UUID {
-	return u.ID
+func (u *User) GetID() uuid.UUID {
+	return u.id
 }
-func (u *User)GetUsername() string {
+func (u *User) GetUsername() string {
 	return u.username
 }
-func (u *User)GetEmail() string {
+func (u *User) GetEmail() string {
 	return u.email
 }
-func (u *User)GetHashedPassword() string {
+func (u *User) GetHashedPassword() string {
 	return u.hashedPassword
 }
 
-func (u *User)GetRole() Role {
+func (u *User) GetRole() Role {
 	return u.role
 }
-func (u *User)GetCreatedAt() time.Time {
+func (u *User) GetCreatedAt() time.Time {
 	return u.createdAt
 }
-func (u *User)GetUpdatedAt() *time.Time {
+func (u *User) GetUpdatedAt() *time.Time {
 	return u.updatedAt
 }
 
@@ -52,7 +52,7 @@ func NewUser(id uuid.UUID, username string, email string, hashedPassword string,
 
 	return &User{
 
-		ID:             id,
+		id:             id,
 		username:       username,
 		email:          email,
 		hashedPassword: hashedPassword,
