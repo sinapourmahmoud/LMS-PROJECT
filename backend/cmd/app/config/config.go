@@ -18,5 +18,8 @@ func init() {
 	if err := env.Parse(&Config.Database); err != nil {
 		panic(err)
 	}
+	if err := env.Parse(&Config.Auth); err != nil {
+		panic(err)
+	}
 
 }

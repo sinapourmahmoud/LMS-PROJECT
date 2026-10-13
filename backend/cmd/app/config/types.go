@@ -2,7 +2,6 @@ package config
 
 var Config = &config{}
 
-
 type config struct {
 	Application struct {
 		Name        string `env:"APPLICATION_NAME"     envDefault:"LMS"`
@@ -17,5 +16,12 @@ type config struct {
 		DB_PASSWORD string `env:"DB_PASSWORD" envDefault:"password"`
 		DB_NAME     string `env:"DB_NAME" envDefault:"lms"`
 		DB_SSLMODE  string `env:"DB_SSLMODE" envDefault:"disable"`
+	}
+	
+	Auth struct {
+		JWTAccessSecret   string `env:"JWT_ACCESS_SECRET"`
+		JWTRefreshSecret  string `env:"JWT_REFRESH_SECRET"`
+		AccessTokenTTLMin int    `env:"ACCESS_TOKEN_TTL_MIN" envDefault:"15"`
+		RefreshTokenTTLHr int    `env:"REFRESH_TOKEN_TTL_HR" envDefault:"168"`
 	}
 }
