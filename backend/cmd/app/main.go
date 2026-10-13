@@ -3,8 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
+
+	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/lms-project/backend/cmd/app/config"
+	"github.com/lms-project/backend/internal/user/domain/services"
+	"github.com/lms-project/backend/internal/user/infrastructure/postgres"
+	userhttp "github.com/lms-project/backend/internal/user/interfaces/http"
 )
 
 func main() {
@@ -20,16 +25,26 @@ func main() {
 	)
 
 	db, err := sqlx.Connect("pgx", dsn)
-
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer db.Close()
 
+	log.Println("database connection established")
 
+	userRepository := postgres.NewUserRepository(db)
+	userCommandServices := services.NewUserCommandDomainServices(userRepository)
+	userHandler := userhttp.NewUserHandler(userCommandServices)
 
+	router := gin.Default()
 
-	log.Println("user created successfully")
+	//routes
+	router.POST("/signup", userHandler.SignUp())
+
+	log.Println("server listening on :5000")
+
+	if err := router.Run(":5000"); err != nil {
+		log.Fatal(err)
+	}
 
 }
