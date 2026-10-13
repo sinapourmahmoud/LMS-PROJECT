@@ -37,10 +37,11 @@ func (r *userCommandDomainServices) SignUp(ctx context.Context, req *dto.SignUpR
 		return nil, err
 	}
 
-	if user != nil && err == nil {
+	if user != nil  {
 		return nil, &errorhandler.Response{
-			Code:    errorhandler.EmailAlreadyExistsErrorCode,
-			Message: errorhandler.EmailAlreadyExistsMessage,
+			Code:       errorhandler.EmailAlreadyExistsErrorCode,
+			Message:    errorhandler.EmailAlreadyExistsMessage,
+			StatusCode: 409,
 		}
 
 	}
@@ -51,10 +52,11 @@ func (r *userCommandDomainServices) SignUp(ctx context.Context, req *dto.SignUpR
 		return nil, err
 	}
 
-	if user != nil && err == nil {
+	if user != nil  {
 		return nil, &errorhandler.Response{
-			Code:    errorhandler.UsernameAlreadyExistsErrorCode,
-			Message: errorhandler.UsernameAlreadyExistsMessage,
+			Code:       errorhandler.UsernameAlreadyExistsErrorCode,
+			Message:    errorhandler.UsernameAlreadyExistsMessage,
+			StatusCode: 409,
 		}
 
 	}
@@ -65,6 +67,7 @@ func (r *userCommandDomainServices) SignUp(ctx context.Context, req *dto.SignUpR
 		return nil, &errorhandler.Response{
 			Code:    errorhandler.InternalSystemErrorCode,
 			Message: errorhandler.InternalSystemErrorMessage,
+			StatusCode: 500,
 		}
 	}
 

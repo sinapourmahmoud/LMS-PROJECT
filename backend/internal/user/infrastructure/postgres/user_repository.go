@@ -3,9 +3,11 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib" // registers "pgx" driver with database/sql
 	"github.com/jmoiron/sqlx"
 	"github.com/lms-project/backend/internal/user/domain/entity"
@@ -45,11 +47,19 @@ func (r *userRepository) Create(ctx context.Context, user *entity.User) *errorha
 	)
 
 	if err != nil {
-		return &errorhandler.Response{
-			Code:    errorhandler.DatabaseErrorCode,
-			Message: err.Error(),
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			switch pgErr.ConstraintName {
+			case "users_email_key":
+				return &errorhandler.Response{Code: errorhandler.EmailAlreadyExistsErrorCode, Message: errorhandler.EmailAlreadyExistsMessage, StatusCode: 409}
+			case "users_username_key":
+				return &errorhandler.Response{Code: errorhandler.UsernameAlreadyExistsErrorCode, Message: errorhandler.UsernameAlreadyExistsMessage, StatusCode: 409}
+			}
 		}
+		// anything that wasn't one of the specific cases above is a real failure
+		return &errorhandler.Response{Code: errorhandler.DatabaseErrorCode, Message: errorhandler.DatabaseErrorMessage, StatusCode: 500}
 	}
+
 	return nil
 
 }
@@ -85,6 +95,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*entity.
 		return nil, &errorhandler.Response{
 			Code:    errorhandler.DatabaseErrorCode,
 			Message: err.Error(),
+			StatusCode: 500,
 		}
 
 	}
@@ -125,6 +136,7 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*e
 		return nil, &errorhandler.Response{
 			Code:    errorhandler.DatabaseErrorCode,
 			Message: err.Error(),
+			StatusCode: 500,
 		}
 	}
 
