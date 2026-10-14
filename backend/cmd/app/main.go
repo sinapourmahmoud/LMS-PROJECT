@@ -34,12 +34,14 @@ func main() {
 
 	userRepository := postgres.NewUserRepository(db)
 	userCommandServices := services.NewUserCommandDomainServices(userRepository)
-	userHandler := userhttp.NewUserHandler(userCommandServices)
+	userQuesryServices :=services.NewUserQueryServices(userRepository)
+	userHandler := userhttp.NewUserHandler(userCommandServices,userQuesryServices)
 
 	router := gin.Default()
 
 	//routes
 	router.POST("/signup", userHandler.SignUp())
+	router.POST("/login", userHandler.Login())
 
 	log.Println("server listening on :5000")
 

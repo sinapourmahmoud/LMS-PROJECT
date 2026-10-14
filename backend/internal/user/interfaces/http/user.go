@@ -3,6 +3,7 @@ package http
 import (
 	"reflect"
 	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/lms-project/backend/internal/user/application/dto"
@@ -23,12 +24,14 @@ func init() {
 }
 
 type handler struct {
-	userCommandServices services.UserCommandDomainServices
+	userCommandServices     services.UserCommandDomainServices
+	userQueryDomainServices services.UserQueryDomainServices
 }
 
-func NewUserHandler(userCommandServices services.UserCommandDomainServices) *handler {
+func NewUserHandler(userCommandServices services.UserCommandDomainServices, userQueryDomainServices services.UserQueryDomainServices) *handler {
 	return &handler{
-		userCommandServices: userCommandServices,
+		userCommandServices:     userCommandServices,
+		userQueryDomainServices: userQueryDomainServices,
 	}
 }
 
@@ -63,4 +66,33 @@ func (h *handler) SignUp() gin.HandlerFunc {
 		c.JSON(201, res)
 
 	}
+}
+
+func (h *handler) Login() gin.HandlerFunc {
+
+	return func(c *gin.Context) {
+
+		var request dto.LoginReqDto
+
+		if err := c.ShouldBindJSON(&request); err != nil {
+			c.JSON(400, &errorhandler.Response{Code: errorhandler.RequestBodyParseErrorCode, Message: errorhandler.RequestBodyParseErrorMessage, StatusCode: 400})
+			return
+		}
+
+		if err := validate.Struct(request); err != nil {
+			c.JSON(400, &errorhandler.Response{Code: errorhandler.ValidationErrorCode, Message: errorhandler.FormatValidationErrors(err), StatusCode: 400})
+			return
+		}
+
+		res, resErr := h.userQueryDomainServices.Login(c, &request)
+		if resErr != nil {
+
+			c.JSON(resErr.StatusCode, resErr)
+			return
+
+		}
+		c.JSON(200, res)
+
+	}
+
 }
