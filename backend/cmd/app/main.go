@@ -10,6 +10,7 @@ import (
 	"github.com/lms-project/backend/internal/user/domain/services"
 	"github.com/lms-project/backend/internal/user/infrastructure/postgres"
 	userhttp "github.com/lms-project/backend/internal/user/interfaces/http"
+	"github.com/lms-project/backend/pkg/middleware"
 )
 
 func main() {
@@ -34,14 +35,17 @@ func main() {
 
 	userRepository := postgres.NewUserRepository(db)
 	userCommandServices := services.NewUserCommandDomainServices(userRepository)
-	userQuesryServices :=services.NewUserQueryServices(userRepository)
-	userHandler := userhttp.NewUserHandler(userCommandServices,userQuesryServices)
+	userQuesryServices := services.NewUserQueryServices(userRepository)
+	userHandler := userhttp.NewUserHandler(userCommandServices, userQuesryServices)
 
 	router := gin.Default()
 
 	//routes
 	router.POST("/signup", userHandler.SignUp())
 	router.POST("/login", userHandler.Login())
+	router.GET("/whoami", middleware.AuthMiddleware(), func(c *gin.Context) {
+		c.JSON(200, gin.H{"userID": c.MustGet("userID")})
+	})
 
 	log.Println("server listening on :5000")
 
