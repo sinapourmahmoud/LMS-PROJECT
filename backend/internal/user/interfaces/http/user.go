@@ -1,11 +1,14 @@
 package http
 
 import (
+	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/lms-project/backend/cmd/app/config"
 	"github.com/lms-project/backend/internal/user/application/dto"
 	"github.com/lms-project/backend/internal/user/domain/services"
 	"github.com/lms-project/backend/pkg/errorhandler"
@@ -91,8 +94,45 @@ func (h *handler) Login() gin.HandlerFunc {
 			return
 
 		}
-		c.JSON(200, res)
+
+		http.SetCookie(c.Writer, &http.Cookie{
+
+			Name:     "refresh_token",
+			Value:    res.RefreshToken,
+			Path:     "/refresh",
+			HttpOnly: true,
+			MaxAge:   int(time.Duration(config.Config.Auth.RefreshTokenTTLHr) * time.Hour / time.Second),
+			Secure:   false,
+			SameSite: http.SameSiteLaxMode,
+		})
+
+		c.JSON(200, gin.H{"access_token": res.AccessToken})
 
 	}
 
+}
+
+func (h *handler) Refresh() gin.HandlerFunc {
+
+	return func(c *gin.Context) {
+
+		token, err := c.Cookie("refresh_token")
+		if err != nil {
+
+			c.JSON(401, &errorhandler.Response{Code: errorhandler.InvalidRefreshTokenErrorCode, Message: errorhandler.InvalidRefreshTokenMessage, StatusCode: 401})
+			return
+
+		}
+
+		res, resErr := h.userQueryDomainServices.Refresh(c, token)
+
+		if resErr != nil {
+			c.JSON(resErr.StatusCode,resErr)
+			return
+
+		}
+
+		c.JSON(200,res)
+
+	}
 }

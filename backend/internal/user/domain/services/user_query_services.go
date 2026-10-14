@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	gojwt "github.com/golang-jwt/jwt/v4"
 	"github.com/lms-project/backend/cmd/app/config"
 	"github.com/lms-project/backend/internal/user/application/dto"
 	"github.com/lms-project/backend/internal/user/domain/repository"
@@ -15,6 +16,7 @@ import (
 
 type UserQueryDomainServices interface {
 	Login(ctx context.Context, req *dto.LoginReqDto) (*values.TokenResponse, *errorhandler.Response)
+	Refresh(ctx context.Context, refreshToken string) (*values.AccessTokenResponse, *errorhandler.Response)
 }
 
 type userQueryDomainServices struct {
@@ -64,4 +66,32 @@ func (r *userQueryDomainServices) Login(ctx context.Context, req *dto.LoginReqDt
 	}
 
 	return values.NewTokenResponse(accessToken, refreshToken), nil
+}
+
+func (r *userQueryDomainServices) Refresh(ctx context.Context, refreshToken string) (*values.AccessTokenResponse, *errorhandler.Response) {
+
+	claims, err := jwt.ParseToken(refreshToken, config.Config.Auth.JWTRefreshSecret)
+	if err != nil {
+		if ve, ok := err.(*gojwt.ValidationError); ok && ve.Errors&gojwt.ValidationErrorExpired != 0 {
+			return nil, &errorhandler.Response{Code: errorhandler.ExpiredRefreshTokenErrorCode, Message: errorhandler.ExpiredRefreshTokenMessage, StatusCode: 401}
+		}
+		return nil, &errorhandler.Response{Code: errorhandler.InvalidRefreshTokenErrorCode, Message: errorhandler.InvalidRefreshTokenMessage, StatusCode: 401}
+	}
+
+	user, repoErr := r.userRepository.GetByID(ctx, claims.UserID)
+
+	if repoErr != nil {
+		return nil, repoErr
+	}
+	if user == nil {
+		return nil, &errorhandler.Response{Code: errorhandler.UserNotFoundErrorCode, Message: errorhandler.UserNotFoundMessage, StatusCode: 404}
+	}
+
+	accessToken, tokenErr := jwt.GenerateAccessToken(user.GetID(), user.GetRole(), config.Config.Auth.JWTAccessSecret, time.Duration(config.Config.Auth.AccessTokenTTLMin)*time.Minute)
+	if tokenErr != nil {
+		return nil, &errorhandler.Response{Code: errorhandler.InternalSystemErrorCode, Message: errorhandler.InternalSystemErrorMessage, StatusCode: 500}
+	}
+
+	return values.NewAccessTokenResponse(accessToken), nil
+
 }

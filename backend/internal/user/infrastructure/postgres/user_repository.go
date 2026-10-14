@@ -93,8 +93,8 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*entity.
 		}
 
 		return nil, &errorhandler.Response{
-			Code:    errorhandler.DatabaseErrorCode,
-			Message: err.Error(),
+			Code:       errorhandler.DatabaseErrorCode,
+			Message:    err.Error(),
 			StatusCode: 500,
 		}
 
@@ -134,8 +134,8 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*e
 		}
 
 		return nil, &errorhandler.Response{
-			Code:    errorhandler.DatabaseErrorCode,
-			Message: err.Error(),
+			Code:       errorhandler.DatabaseErrorCode,
+			Message:    err.Error(),
 			StatusCode: 500,
 		}
 	}
@@ -147,4 +147,47 @@ func (r *userRepository) GetByUsername(ctx context.Context, username string) (*e
 	}
 
 	return entity.NewUser(id, userUsername, email, hashedPassword, role, createdAt, updatedAtPtr), nil
+}
+
+func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.User, *errorhandler.Response) {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+
+	defer cancel()
+
+	query := `
+				SELECT id, username, email, hashed_password, role, created_at, updated_at FROM users WHERE id = $1
+
+	`
+	var (
+		userID         uuid.UUID
+		username       string
+		email          string
+		hashedPassword string
+		role           entity.Role
+		createdAt      time.Time
+		updatedAt      sql.NullTime
+	)
+
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&userID, &username, &email, &hashedPassword, &role, &createdAt, &updatedAt)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, &errorhandler.Response{
+			Code:       errorhandler.DatabaseErrorCode,
+			Message:    err.Error(),
+			StatusCode: 500,
+		}
+	}
+
+	var updatedAtPtr *time.Time
+
+	if updatedAt.Valid {
+		updatedAtPtr = &updatedAt.Time
+	}
+
+	return entity.NewUser(userID, username, email, hashedPassword, role, createdAt, updatedAtPtr), nil
+
 }

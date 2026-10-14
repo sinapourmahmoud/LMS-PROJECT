@@ -46,6 +46,7 @@ func main() {
 	router.GET("/whoami", middleware.AuthMiddleware(), func(c *gin.Context) {
 		c.JSON(200, gin.H{"userID": c.MustGet("userID")})
 	})
+	router.POST("/refresh", userHandler.Refresh())
 
 	log.Println("server listening on :5000")
 

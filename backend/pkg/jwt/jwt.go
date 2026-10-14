@@ -44,7 +44,7 @@ func GenerateRefreshToken(userID uuid.UUID, secret string, ttl time.Duration) (s
 	return token.SignedString([]byte(secret))
 }
 
-func ParseAccessToken(tokenString, secret string) (*Claims, error) {
+func ParseToken(tokenString, secret string) (*Claims, error) {
 
 	claims := &Claims{}
 
