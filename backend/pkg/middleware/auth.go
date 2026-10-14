@@ -28,6 +28,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		claims, err := jwt.ParseToken(parts[1], config.Config.Auth.JWTAccessSecret)
 		if err != nil {
+
 			if ve, ok := err.(*gojwt.ValidationError); ok && ve.Errors&gojwt.ValidationErrorExpired != 0 {
 				c.JSON(401, &errorhandler.Response{Code: errorhandler.ExpiredAccessTokenErrorCode, Message: errorhandler.ExpiredAccessTokenMessage, StatusCode: 401})
 				c.Abort()
