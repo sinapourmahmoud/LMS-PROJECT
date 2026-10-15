@@ -36,7 +36,7 @@ func main() {
 	userRepository := postgres.NewUserRepository(db)
 	refreshTokenRepository := postgres.NewRefreshTokenRepository(db)
 	userCommandServices := services.NewUserCommandDomainServices(userRepository)
-	userQuesryServices := services.NewUserQueryServices(userRepository,refreshTokenRepository)
+	userQuesryServices := services.NewUserQueryServices(userRepository, refreshTokenRepository)
 	userHandler := userhttp.NewUserHandler(userCommandServices, userQuesryServices)
 
 	router := gin.Default()
@@ -48,6 +48,7 @@ func main() {
 		c.JSON(200, gin.H{"userID": c.MustGet("userID")})
 	})
 	router.POST("/refresh", userHandler.Refresh())
+	router.POST("/logout", userHandler.Logout())
 
 	log.Println("server listening on :5000")
 

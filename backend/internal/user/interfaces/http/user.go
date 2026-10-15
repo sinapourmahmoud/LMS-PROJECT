@@ -127,12 +127,45 @@ func (h *handler) Refresh() gin.HandlerFunc {
 		res, resErr := h.userQueryDomainServices.Refresh(c, token)
 
 		if resErr != nil {
-			c.JSON(resErr.StatusCode,resErr)
+			c.JSON(resErr.StatusCode, resErr)
 			return
 
 		}
 
-		c.JSON(200,res)
+		c.JSON(200, res)
+
+	}
+}
+
+func (h *handler) Logout() gin.HandlerFunc {
+
+	return func(c *gin.Context) {
+
+		token, err := c.Cookie("refresh_token")
+
+		if err != nil {
+			c.JSON(401, &errorhandler.Response{Code: errorhandler.InvalidRefreshTokenErrorCode, Message: errorhandler.InvalidRefreshTokenMessage, StatusCode: 401})
+			return
+		}
+
+		resErr := h.userQueryDomainServices.Logout(c, token)
+
+		if resErr != nil {
+			c.JSON(resErr.StatusCode, resErr)
+			return
+		}
+
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    "",
+			Path:     "/refresh",
+			HttpOnly: true,
+			MaxAge:   -1,
+			Secure:   false,
+			SameSite: http.SameSiteLaxMode,
+		})
+
+		c.JSON(200, gin.H{"message": "Logged out"})
 
 	}
 }
