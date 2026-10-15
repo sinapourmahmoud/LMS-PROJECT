@@ -10,7 +10,6 @@ type RefreshToken struct {
 	id uuid.UUID
 
 	userID    uuid.UUID
-	email     string
 	tokenHash string
 	expiresAt time.Time
 	createdAt time.Time
@@ -23,9 +22,7 @@ func (r *RefreshToken) GetID() uuid.UUID {
 func (r *RefreshToken) GetUserID() uuid.UUID {
 	return r.userID
 }
-func (r *RefreshToken) GetEmail() string {
-	return r.email
-}
+
 func (r *RefreshToken) GetTokenHash() string {
 	return r.tokenHash
 }
