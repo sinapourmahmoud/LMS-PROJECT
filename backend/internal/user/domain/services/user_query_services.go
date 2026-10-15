@@ -2,11 +2,15 @@ package services
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"time"
 
 	gojwt "github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/lms-project/backend/cmd/app/config"
 	"github.com/lms-project/backend/internal/user/application/dto"
+	"github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/internal/user/domain/repository"
 	"github.com/lms-project/backend/internal/user/domain/values"
 	"github.com/lms-project/backend/pkg/errorhandler"
@@ -17,16 +21,19 @@ import (
 type UserQueryDomainServices interface {
 	Login(ctx context.Context, req *dto.LoginReqDto) (*values.TokenResponse, *errorhandler.Response)
 	Refresh(ctx context.Context, refreshToken string) (*values.AccessTokenResponse, *errorhandler.Response)
+	Logout(ctx context.Context, refreshToken string) *errorhandler.Response
 }
 
 type userQueryDomainServices struct {
-	userRepository repository.UserRepository
+	userRepository         repository.UserRepository
+	refreshTokenRepository repository.RefreshTokenRepository
 }
 
-func NewUserQueryServices(userRepository repository.UserRepository) UserQueryDomainServices {
+func NewUserQueryServices(userRepository repository.UserRepository, refreshTokenRepository repository.RefreshTokenRepository) UserQueryDomainServices {
 
 	return &userQueryDomainServices{
-		userRepository: userRepository,
+		userRepository:         userRepository,
+		refreshTokenRepository: refreshTokenRepository,
 	}
 
 }
@@ -65,6 +72,16 @@ func (r *userQueryDomainServices) Login(ctx context.Context, req *dto.LoginReqDt
 		return nil, &errorhandler.Response{Code: errorhandler.InternalSystemErrorCode, Message: errorhandler.InternalSystemErrorMessage, StatusCode: 500}
 	}
 
+	hashToken := hashRefreshToken(refreshToken)
+
+	tokenEntity := entity.NewRefreshToken(uuid.New(), user.GetID(), hashToken, time.Now().Add(time.Duration(config.Config.Auth.RefreshTokenTTLHr)*time.Hour), nil, time.Now())
+
+	if repoErr := r.refreshTokenRepository.Create(ctx, tokenEntity); repoErr != nil {
+
+		return nil, repoErr
+
+	}
+
 	return values.NewTokenResponse(accessToken, refreshToken), nil
 }
 
@@ -75,6 +92,16 @@ func (r *userQueryDomainServices) Refresh(ctx context.Context, refreshToken stri
 		if ve, ok := err.(*gojwt.ValidationError); ok && ve.Errors&gojwt.ValidationErrorExpired != 0 {
 			return nil, &errorhandler.Response{Code: errorhandler.ExpiredRefreshTokenErrorCode, Message: errorhandler.ExpiredRefreshTokenMessage, StatusCode: 401}
 		}
+		return nil, &errorhandler.Response{Code: errorhandler.InvalidRefreshTokenErrorCode, Message: errorhandler.InvalidRefreshTokenMessage, StatusCode: 401}
+	}
+
+	hash := hashRefreshToken(refreshToken)
+
+	tokenRecord, repoErr := r.refreshTokenRepository.FindByHash(ctx, hash)
+	if repoErr != nil {
+		return nil, repoErr
+	}
+	if tokenRecord == nil || tokenRecord.IsRevoked() || tokenRecord.IsExpired(time.Now()) {
 		return nil, &errorhandler.Response{Code: errorhandler.InvalidRefreshTokenErrorCode, Message: errorhandler.InvalidRefreshTokenMessage, StatusCode: 401}
 	}
 
@@ -94,4 +121,20 @@ func (r *userQueryDomainServices) Refresh(ctx context.Context, refreshToken stri
 
 	return values.NewAccessTokenResponse(accessToken), nil
 
+}
+
+func (r *userQueryDomainServices) Logout(ctx context.Context, refreshToken string) *errorhandler.Response {
+	hash := hashRefreshToken(refreshToken)
+
+	if repoErr := r.refreshTokenRepository.Revoke(ctx, hash); repoErr != nil {
+		return repoErr
+	}
+
+	return nil
+}
+
+// hash function
+func hashRefreshToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
 }

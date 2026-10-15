@@ -24,13 +24,13 @@ func NewRefreshTokenRepository(db *sqlx.DB) repository.RefreshTokenRepository {
 
 }
 
-func (r *refreshTokenRepository) Create(ctx context.Context, refreshToken entity.RefreshToken) *errorhandler.Response {
+func (r *refreshTokenRepository) Create(ctx context.Context, refreshToken *entity.RefreshToken) *errorhandler.Response {
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
 	query := `
-	INSERT INTO refresh_tokens(id,user_id,token_hash,expires_at,revoked_at,created_at) VALUES ($1,$2,$3,$4,$5,%6)
+	INSERT INTO refresh_tokens(id,user_id,token_hash,expires_at,revoked_at,created_at) VALUES ($1,$2,$3,$4,$5,$6)
 	`
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -58,7 +58,7 @@ func (r *refreshTokenRepository) FindByHash(ctx context.Context, hash string) (*
 	defer cancel()
 
 	query := `
-	SELECT id,user_id,token_hash,expires_at,revoked_at,created_at WHERE token_hash=$1
+	SELECT id,user_id,token_hash,expires_at,revoked_at,created_at FROM refresh_tokens WHERE token_hash=$1
 	`
 
 	var (
@@ -70,7 +70,7 @@ func (r *refreshTokenRepository) FindByHash(ctx context.Context, hash string) (*
 		revokedAt sql.NullTime
 	)
 
-	err := r.db.QueryRowContext(ctx, query).Scan(&id, &userID, &tokenHash, &expiresAt, &revokedAt, &createdAt)
+	err := r.db.QueryRowContext(ctx, query,hash).Scan(&id, &userID, &tokenHash, &expiresAt, &revokedAt, &createdAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {

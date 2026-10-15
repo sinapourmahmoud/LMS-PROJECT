@@ -34,8 +34,9 @@ func main() {
 	log.Println("database connection established")
 
 	userRepository := postgres.NewUserRepository(db)
+	refreshTokenRepository := postgres.NewRefreshTokenRepository(db)
 	userCommandServices := services.NewUserCommandDomainServices(userRepository)
-	userQuesryServices := services.NewUserQueryServices(userRepository)
+	userQuesryServices := services.NewUserQueryServices(userRepository,refreshTokenRepository)
 	userHandler := userhttp.NewUserHandler(userCommandServices, userQuesryServices)
 
 	router := gin.Default()
