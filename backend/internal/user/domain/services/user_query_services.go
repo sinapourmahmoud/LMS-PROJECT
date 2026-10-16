@@ -22,6 +22,7 @@ type UserQueryDomainServices interface {
 	Login(ctx context.Context, req *dto.LoginReqDto) (*values.TokenResponse, *errorhandler.Response)
 	Refresh(ctx context.Context, refreshToken string) (*values.AccessTokenResponse, *errorhandler.Response)
 	Logout(ctx context.Context, refreshToken string) *errorhandler.Response
+	IsSessionValid(ctx context.Context, sessionID uuid.UUID) *errorhandler.Response
 }
 
 type userQueryDomainServices struct {
@@ -62,19 +63,21 @@ func (r *userQueryDomainServices) Login(ctx context.Context, req *dto.LoginReqDt
 		}
 	}
 
-	accessToken, tokenErr := jwt.GenerateAccessToken(user.GetID(), user.GetRole(), config.Config.Auth.JWTAccessSecret, time.Duration(config.Config.Auth.AccessTokenTTLMin)*time.Minute)
+	sessionID := uuid.New()
+
+	accessToken, tokenErr := jwt.GenerateAccessToken(sessionID, user.GetID(), user.GetRole(), config.Config.Auth.JWTAccessSecret, time.Duration(config.Config.Auth.AccessTokenTTLMin)*time.Minute)
 	if tokenErr != nil {
 		return nil, &errorhandler.Response{Code: errorhandler.InternalSystemErrorCode, Message: errorhandler.InternalSystemErrorMessage, StatusCode: 500}
 	}
 
-	refreshToken, tokenErr := jwt.GenerateRefreshToken(user.GetID(), config.Config.Auth.JWTRefreshSecret, time.Duration(config.Config.Auth.RefreshTokenTTLHr)*time.Hour)
+	refreshToken, tokenErr := jwt.GenerateRefreshToken(sessionID, user.GetID(), config.Config.Auth.JWTRefreshSecret, time.Duration(config.Config.Auth.RefreshTokenTTLHr)*time.Hour)
 	if tokenErr != nil {
 		return nil, &errorhandler.Response{Code: errorhandler.InternalSystemErrorCode, Message: errorhandler.InternalSystemErrorMessage, StatusCode: 500}
 	}
 
 	hashToken := hashRefreshToken(refreshToken)
 
-	tokenEntity := entity.NewRefreshToken(uuid.New(), user.GetID(), hashToken, time.Now().Add(time.Duration(config.Config.Auth.RefreshTokenTTLHr)*time.Hour), nil, time.Now())
+	tokenEntity := entity.NewRefreshToken(sessionID, user.GetID(), hashToken, time.Now().Add(time.Duration(config.Config.Auth.RefreshTokenTTLHr)*time.Hour), nil, time.Now())
 
 	if repoErr := r.refreshTokenRepository.Create(ctx, tokenEntity); repoErr != nil {
 
@@ -114,7 +117,7 @@ func (r *userQueryDomainServices) Refresh(ctx context.Context, refreshToken stri
 		return nil, &errorhandler.Response{Code: errorhandler.UserNotFoundErrorCode, Message: errorhandler.UserNotFoundMessage, StatusCode: 404}
 	}
 
-	accessToken, tokenErr := jwt.GenerateAccessToken(user.GetID(), user.GetRole(), config.Config.Auth.JWTAccessSecret, time.Duration(config.Config.Auth.AccessTokenTTLMin)*time.Minute)
+	accessToken, tokenErr := jwt.GenerateAccessToken(tokenRecord.GetID(), user.GetID(), user.GetRole(), config.Config.Auth.JWTAccessSecret, time.Duration(config.Config.Auth.AccessTokenTTLMin)*time.Minute)
 	if tokenErr != nil {
 		return nil, &errorhandler.Response{Code: errorhandler.InternalSystemErrorCode, Message: errorhandler.InternalSystemErrorMessage, StatusCode: 500}
 	}
@@ -130,6 +133,21 @@ func (r *userQueryDomainServices) Logout(ctx context.Context, refreshToken strin
 		return repoErr
 	}
 
+	return nil
+}
+
+func (r *userQueryDomainServices) IsSessionValid(ctx context.Context, sessionID uuid.UUID) *errorhandler.Response {
+
+	tokenRecord, repoErr := r.refreshTokenRepository.FindByID(ctx, sessionID)
+
+	if repoErr != nil {
+		return repoErr
+	}
+
+	if tokenRecord == nil || tokenRecord.IsRevoked() || tokenRecord.IsExpired(time.Now()) {
+
+		return &errorhandler.Response{Code: errorhandler.InvalidAccessTokenErrorCode, Message: errorhandler.InvalidAccessTokenMessage, StatusCode: 401}
+	}
 	return nil
 }
 

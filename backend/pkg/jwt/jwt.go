@@ -10,16 +10,18 @@ import (
 )
 
 type Claims struct {
-	UserID uuid.UUID   `json:"user_id"`
-	Role   entity.Role `json:"role"`
+	SessionID uuid.UUID   `json:"session_id"`
+	UserID    uuid.UUID   `json:"user_id"`
+	Role      entity.Role `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateAccessToken(userID uuid.UUID, role entity.Role, secret string, ttl time.Duration) (string, error) {
+func GenerateAccessToken(sessionID uuid.UUID, userID uuid.UUID, role entity.Role, secret string, ttl time.Duration) (string, error) {
 
 	claims := Claims{
-		UserID: userID,
-		Role:   role,
+		SessionID: sessionID,
+		UserID:    userID,
+		Role:      role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -32,8 +34,10 @@ func GenerateAccessToken(userID uuid.UUID, role entity.Role, secret string, ttl 
 
 }
 
-func GenerateRefreshToken(userID uuid.UUID, secret string, ttl time.Duration) (string, error) {
+func GenerateRefreshToken(sessionID uuid.UUID, userID uuid.UUID, secret string, ttl time.Duration) (string, error) {
 	claims := Claims{
+		SessionID: sessionID,
+
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),

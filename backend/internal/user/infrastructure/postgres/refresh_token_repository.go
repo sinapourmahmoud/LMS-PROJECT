@@ -52,6 +52,7 @@ func (r *refreshTokenRepository) Create(ctx context.Context, refreshToken *entit
 
 	return nil
 }
+
 func (r *refreshTokenRepository) FindByHash(ctx context.Context, hash string) (*entity.RefreshToken, *errorhandler.Response) {
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -70,7 +71,7 @@ func (r *refreshTokenRepository) FindByHash(ctx context.Context, hash string) (*
 		revokedAt sql.NullTime
 	)
 
-	err := r.db.QueryRowContext(ctx, query,hash).Scan(&id, &userID, &tokenHash, &expiresAt, &revokedAt, &createdAt)
+	err := r.db.QueryRowContext(ctx, query, hash).Scan(&id, &userID, &tokenHash, &expiresAt, &revokedAt, &createdAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -93,6 +94,49 @@ func (r *refreshTokenRepository) FindByHash(ctx context.Context, hash string) (*
 	return entity.NewRefreshToken(id, userID, tokenHash, expiresAt, revokedAtPtr, createdAt), nil
 
 }
+
+func (r *refreshTokenRepository) FindByID(ctx context.Context, id uuid.UUID) (*entity.RefreshToken, *errorhandler.Response) {
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	query := `
+	SELECT id,user_id,token_hash,expires_at,revoked_at,created_at FROM refresh_tokens WHERE id=$1
+	`
+
+	var (
+		sessionID        uuid.UUID
+		userID    uuid.UUID
+		tokenHash string
+		expiresAt time.Time
+		createdAt time.Time
+		revokedAt sql.NullTime
+	)
+
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&sessionID, &userID, &tokenHash, &expiresAt, &revokedAt, &createdAt)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, &errorhandler.Response{
+			Code:       errorhandler.DatabaseErrorCode,
+			Message:    err.Error(),
+			StatusCode: 500,
+		}
+
+	}
+
+	var revokedAtPtr *time.Time
+	if revokedAt.Valid {
+		revokedAtPtr = &revokedAt.Time
+	}
+
+	return entity.NewRefreshToken(sessionID, userID, tokenHash, expiresAt, revokedAtPtr, createdAt), nil
+
+}
+
 func (r *refreshTokenRepository) Revoke(ctx context.Context, hash string) *errorhandler.Response {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()

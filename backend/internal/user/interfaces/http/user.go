@@ -99,7 +99,7 @@ func (h *handler) Login() gin.HandlerFunc {
 
 			Name:     "refresh_token",
 			Value:    res.RefreshToken,
-			Path:     "/refresh",
+			Path:     "/",
 			HttpOnly: true,
 			MaxAge:   int(time.Duration(config.Config.Auth.RefreshTokenTTLHr) * time.Hour / time.Second),
 			Secure:   false,
@@ -143,22 +143,21 @@ func (h *handler) Logout() gin.HandlerFunc {
 
 		token, err := c.Cookie("refresh_token")
 
-		if err != nil {
-			c.JSON(401, &errorhandler.Response{Code: errorhandler.InvalidRefreshTokenErrorCode, Message: errorhandler.InvalidRefreshTokenMessage, StatusCode: 401})
-			return
-		}
 
-		resErr := h.userQueryDomainServices.Logout(c, token)
+		if err == nil {
+			resErr := h.userQueryDomainServices.Logout(c, token)
 
-		if resErr != nil {
-			c.JSON(resErr.StatusCode, resErr)
-			return
+			if resErr != nil {
+				c.JSON(resErr.StatusCode, resErr)
+				return
+			}
+
 		}
 
 		http.SetCookie(c.Writer, &http.Cookie{
 			Name:     "refresh_token",
 			Value:    "",
-			Path:     "/refresh",
+			Path:     "/",
 			HttpOnly: true,
 			MaxAge:   -1,
 			Secure:   false,

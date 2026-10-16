@@ -44,7 +44,7 @@ func main() {
 	//routes
 	router.POST("/signup", userHandler.SignUp())
 	router.POST("/login", userHandler.Login())
-	router.GET("/whoami", middleware.AuthMiddleware(), func(c *gin.Context) {
+	router.GET("/whoami", middleware.AuthMiddleware(userQuesryServices), func(c *gin.Context) {
 		c.JSON(200, gin.H{"userID": c.MustGet("userID")})
 	})
 	router.POST("/refresh", userHandler.Refresh())

@@ -1,16 +1,22 @@
 package middleware
 
 import (
+	"context"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	gojwt "github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/lms-project/backend/cmd/app/config"
 	"github.com/lms-project/backend/pkg/errorhandler"
 	"github.com/lms-project/backend/pkg/jwt"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+type SessionChecker interface {
+	IsSessionValid(ctx context.Context, sessionID uuid.UUID) *errorhandler.Response
+}
+
+func AuthMiddleware(sessionChecker SessionChecker) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		authHeader := c.GetHeader("Authorization")
@@ -39,6 +45,13 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+
+		if resErr := sessionChecker.IsSessionValid(c, claims.SessionID); resErr != nil {
+			c.JSON(resErr.StatusCode, resErr)
+			c.Abort()
+			return
+		}
+
 		c.Set("userID", claims.UserID)
 		c.Set("role", claims.Role)
 
