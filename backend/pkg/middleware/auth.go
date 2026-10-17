@@ -8,12 +8,13 @@ import (
 	gojwt "github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/lms-project/backend/cmd/app/config"
+	"github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/pkg/errorhandler"
 	"github.com/lms-project/backend/pkg/jwt"
 )
 
 type SessionChecker interface {
-	IsSessionValid(ctx context.Context, sessionID uuid.UUID) *errorhandler.Response
+	IsSessionValid(ctx context.Context, sessionID uuid.UUID) (entity.Role, *errorhandler.Response)
 }
 
 func AuthMiddleware(sessionChecker SessionChecker) gin.HandlerFunc {
@@ -46,14 +47,15 @@ func AuthMiddleware(sessionChecker SessionChecker) gin.HandlerFunc {
 			return
 		}
 
-		if resErr := sessionChecker.IsSessionValid(c, claims.SessionID); resErr != nil {
+		role, resErr := sessionChecker.IsSessionValid(c, claims.SessionID)
+		if resErr != nil {
 			c.JSON(resErr.StatusCode, resErr)
 			c.Abort()
 			return
 		}
 
 		c.Set("userID", claims.UserID)
-		c.Set("role", claims.Role)
+		c.Set("role", role)
 
 		c.Next()
 

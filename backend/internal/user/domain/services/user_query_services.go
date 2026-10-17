@@ -22,7 +22,7 @@ type UserQueryDomainServices interface {
 	Login(ctx context.Context, req *dto.LoginReqDto) (*values.TokenResponse, *errorhandler.Response)
 	Refresh(ctx context.Context, refreshToken string) (*values.AccessTokenResponse, *errorhandler.Response)
 	Logout(ctx context.Context, refreshToken string) *errorhandler.Response
-	IsSessionValid(ctx context.Context, sessionID uuid.UUID) *errorhandler.Response
+	IsSessionValid(ctx context.Context, sessionID uuid.UUID) (entity.Role, *errorhandler.Response)
 }
 
 type userQueryDomainServices struct {
@@ -136,19 +136,28 @@ func (r *userQueryDomainServices) Logout(ctx context.Context, refreshToken strin
 	return nil
 }
 
-func (r *userQueryDomainServices) IsSessionValid(ctx context.Context, sessionID uuid.UUID) *errorhandler.Response {
+func (r *userQueryDomainServices) IsSessionValid(ctx context.Context, sessionID uuid.UUID) (entity.Role, *errorhandler.Response) {
 
 	tokenRecord, repoErr := r.refreshTokenRepository.FindByID(ctx, sessionID)
 
 	if repoErr != nil {
-		return repoErr
+		return "", repoErr
 	}
 
 	if tokenRecord == nil || tokenRecord.IsRevoked() || tokenRecord.IsExpired(time.Now()) {
 
-		return &errorhandler.Response{Code: errorhandler.InvalidAccessTokenErrorCode, Message: errorhandler.InvalidAccessTokenMessage, StatusCode: 401}
+		return "", &errorhandler.Response{Code: errorhandler.InvalidAccessTokenErrorCode, Message: errorhandler.InvalidAccessTokenMessage, StatusCode: 401}
 	}
-	return nil
+
+	user, repoErr := r.userRepository.GetByID(ctx, tokenRecord.GetUserID())
+	if repoErr != nil {
+		return "", repoErr
+	}
+	if user == nil {
+		return "", &errorhandler.Response{Code: errorhandler.UserNotFoundErrorCode, Message: errorhandler.UserNotFoundMessage, StatusCode: 404}
+	}
+
+	return user.GetRole(), nil
 }
 
 // hash function
