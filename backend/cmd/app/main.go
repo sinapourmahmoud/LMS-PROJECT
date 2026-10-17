@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/lms-project/backend/cmd/app/config"
+	"github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/internal/user/domain/services"
 	"github.com/lms-project/backend/internal/user/infrastructure/postgres"
 	userhttp "github.com/lms-project/backend/internal/user/interfaces/http"
@@ -47,6 +48,12 @@ func main() {
 	router.GET("/whoami", middleware.AuthMiddleware(userQuesryServices), func(c *gin.Context) {
 		c.JSON(200, gin.H{"userID": c.MustGet("userID")})
 	})
+
+	router.GET("teacher-only", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher), func(c *gin.Context) {
+		c.JSON(200, gin.H{"userID": c.MustGet("userID")})
+
+	})
+
 	router.POST("/refresh", userHandler.Refresh())
 	router.POST("/logout", userHandler.Logout())
 

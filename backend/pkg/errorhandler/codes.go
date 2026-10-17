@@ -18,6 +18,7 @@ const (
 	InvalidRefreshTokenErrorCode   = 104
 	ExpiredAccessTokenErrorCode    = 105
 	ExpiredRefreshTokenErrorCode   = 106
+	ForbiddenErrorCode = 107
 )
 
 // User related error codes
@@ -42,6 +43,7 @@ const (
 	InvalidRefreshTokenMessage   = "Invalid refresh token"
 	ExpiredAccessTokenMessage    = "Access token expired"
 	ExpiredRefreshTokenMessage   = "Refresh token expired"
+	ForbiddenMessage = "You do not have permission to perform this action"
 )
 
 // User related error messages
