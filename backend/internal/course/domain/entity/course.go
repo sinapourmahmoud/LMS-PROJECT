@@ -36,7 +36,7 @@ func (c *Course) GetDescription() string {
 func (c *Course) GetTeacherID() uuid.UUID {
 	return c.teacherID
 }
-func (c *Course) GetStatuc() Status {
+func (c *Course) GetStatus() Status {
 	return c.status
 }
 func (c *Course) GetCreatedAt() time.Time {
