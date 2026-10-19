@@ -37,7 +37,7 @@ func (r *courseQueryServices) GetByID(ctx context.Context, id uuid.UUID) (*value
 		return nil, err
 	}
 
-	if course != nil {
+	if course == nil {
 		return nil, &errorhandler.Response{
 			Code:       errorhandler.CourseNotFoundErrorCode,
 			Message:    errorhandler.CourseNotFoundMessage,
