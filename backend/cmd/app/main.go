@@ -7,6 +7,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/lms-project/backend/cmd/app/config"
+	courseServices "github.com/lms-project/backend/internal/course/domain/services"
+	coursePostgres "github.com/lms-project/backend/internal/course/infrastructure/postgres"
+	coursehttp "github.com/lms-project/backend/internal/course/interfaces/http"
 	"github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/internal/user/domain/services"
 	"github.com/lms-project/backend/internal/user/infrastructure/postgres"
@@ -39,10 +42,16 @@ func main() {
 	userCommandServices := services.NewUserCommandDomainServices(userRepository)
 	userQuesryServices := services.NewUserQueryServices(userRepository, refreshTokenRepository)
 	userHandler := userhttp.NewUserHandler(userCommandServices, userQuesryServices)
+	courseRepository := coursePostgres.NewCourseRepository(db)
+	courseCommandServices := courseServices.NewCourseCommandServices(courseRepository, userRepository)
+	courseQueryServices := courseServices.NewCourseQueryServices(courseRepository, userRepository)
+	courseHandler := coursehttp.NewCourseHandler(courseCommandServices, courseQueryServices)
 
 	router := gin.Default()
 
 	//routes
+
+	// user
 	router.POST("/signup", userHandler.SignUp())
 	router.POST("/login", userHandler.Login())
 	router.GET("/whoami", middleware.AuthMiddleware(userQuesryServices), func(c *gin.Context) {
@@ -56,6 +65,18 @@ func main() {
 
 	router.POST("/refresh", userHandler.Refresh())
 	router.POST("/logout", userHandler.Logout())
+
+	// course
+	router.GET("/courses", courseHandler.ListPublishedCourses())
+	router.GET("/courses/:id", courseHandler.GetCourse())
+
+	router.POST("/courses", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher), courseHandler.CreateCourse())
+	router.GET("/courses/mine", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher), courseHandler.ListMyCourses())
+
+	router.GET("/courses/pending", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleAdmin), courseHandler.ListPendingCourses())
+	router.PATCH("/courses/:id/approve", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleAdmin), courseHandler.ApproveCourse())
+
+	router.DELETE("/courses/:id", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher, entity.RoleAdmin), courseHandler.DeleteCourse())
 
 	log.Println("server listening on :5000")
 
