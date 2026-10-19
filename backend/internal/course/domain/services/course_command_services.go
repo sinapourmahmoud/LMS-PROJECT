@@ -53,7 +53,7 @@ func (r *courseCommandServices) Create(ctx context.Context, title string, descri
 		return nil, resErr
 	}
 
-	return &values.CourseResponse{ID: course.GetID(), Title: course.GetTitle(), Description: course.GetDescription(), TeacherID: user.GetID(), Status: course.GetStatus()}, nil
+	return values.NewCourseResponse(course), nil
 }
 func (r *courseCommandServices) Approve(ctx context.Context, courseID uuid.UUID) *errorhandler.Response {
 
