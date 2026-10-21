@@ -26,6 +26,11 @@ const (
 	UserNotFoundErrorCode = 200
 )
 
+// Enrollment related error codes
+const (
+	AlreadyEnrolledErrorCode = 400
+)
+
 const (
 	CourseNotFoundErrorCode = 300
 )
@@ -47,7 +52,8 @@ const (
 	InvalidRefreshTokenMessage   = "Invalid refresh token"
 	ExpiredAccessTokenMessage    = "Access token expired"
 	ExpiredRefreshTokenMessage   = "Refresh token expired"
-	ForbiddenMessage             = "You do not have permission to perform this action"
+	ForbiddenMessage
+	AlreadyEnrolledErrorMessage = "You are already enrolled in this course"
 )
 
 // User related error messages
