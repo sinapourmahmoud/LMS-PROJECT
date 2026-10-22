@@ -52,8 +52,8 @@ const (
 	InvalidRefreshTokenMessage   = "Invalid refresh token"
 	ExpiredAccessTokenMessage    = "Access token expired"
 	ExpiredRefreshTokenMessage   = "Refresh token expired"
-	ForbiddenMessage
-	AlreadyEnrolledErrorMessage = "You are already enrolled in this course"
+	ForbiddenMessage             = "You do not have permission to perform this action"
+	AlreadyEnrolledErrorMessage  = "You are already enrolled in this course"
 )
 
 // User related error messages

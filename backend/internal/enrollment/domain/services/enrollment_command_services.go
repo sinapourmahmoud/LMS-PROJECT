@@ -22,7 +22,7 @@ type enrollmentCommandServices struct {
 	courseRepository     courseRepository.CourseRepository
 }
 
-func NewEnrollmentCommandServices(enrollmentRepository repository.EnrollmentRepository, courseRepository courseRepository.CourseRepository) *enrollmentCommandServices {
+func NewEnrollmentCommandServices(enrollmentRepository repository.EnrollmentRepository, courseRepository courseRepository.CourseRepository) EnrollmentCommandDomainServices {
 
 	return &enrollmentCommandServices{
 		enrollmentRepository: enrollmentRepository,
@@ -36,11 +36,7 @@ func (r *enrollmentCommandServices) Enroll(ctx context.Context, studentID uuid.U
 	course, err := r.courseRepository.GetByID(ctx, courseID)
 
 	if err != nil {
-		return nil, &errorhandler.Response{
-			Code:       errorhandler.CourseNotFoundErrorCode,
-			Message:    errorhandler.CourseNotFoundMessage,
-			StatusCode: 404,
-		}
+		return nil, err
 	}
 
 	if course == nil || course.GetStatus() != courseEntity.StatusPublished {
@@ -57,7 +53,7 @@ func (r *enrollmentCommandServices) Enroll(ctx context.Context, studentID uuid.U
 		return nil, err
 	}
 
-	if existing == nil {
+	if existing != nil {
 		return nil, &errorhandler.Response{
 			Code:       errorhandler.AlreadyEnrolledErrorCode,
 			Message:    errorhandler.AlreadyEnrolledErrorMessage,
