@@ -56,7 +56,7 @@ func (r *courseQueryServices) ListPublished(ctx context.Context) ([]*values.Cour
 	if err != nil {
 		return nil, err
 	}
-	var courses []*values.CourseResponse
+	var courses = make([]*values.CourseResponse, 0, len(entityCourses))
 
 	for _, course := range entityCourses {
 		courses = append(courses, values.NewCourseResponse(course))
@@ -87,7 +87,7 @@ func (r *courseQueryServices) ListByTeacher(ctx context.Context, teacherID uuid.
 	if err != nil {
 		return nil, err
 	}
-	var courses []*values.CourseResponse
+	var courses = make([]*values.CourseResponse, 0, len(entityCourses))
 
 	for _, course := range entityCourses {
 		courses = append(courses, values.NewCourseResponse(course))
@@ -103,7 +103,7 @@ func (r *courseQueryServices) ListPending(ctx context.Context) ([]*values.Course
 	if err != nil {
 		return nil, err
 	}
-	var courses []*values.CourseResponse
+	var courses = make([]*values.CourseResponse, 0, len(entityCourses))
 
 	for _, course := range entityCourses {
 		courses = append(courses, values.NewCourseResponse(course))
