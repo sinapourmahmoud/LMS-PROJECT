@@ -1,4 +1,4 @@
-module github.com/lms-project
+module github.com/lms-project/backend
 
 go 1.26.4
 
