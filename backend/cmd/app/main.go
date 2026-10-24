@@ -78,9 +78,9 @@ func main() {
 
 	router.DELETE("/courses/:id", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher, entity.RoleAdmin), courseHandler.DeleteCourse())
 
-	log.Println("server listening on :5000")
+	log.Println("server listening on :", config.Config.Application.PORT)
 
-	if err := router.Run(":5000"); err != nil {
+	if err := router.Run(":" + config.Config.Application.PORT); err != nil {
 		log.Fatal(err)
 	}
 

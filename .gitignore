@@ -1,0 +1,40 @@
+# Env files: these hold real secrets (DB password, JWT secrets)
+.env
+.env.*
+!.env.example
+
+# Compiled binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+/backend/cmd/app/app
+
+# Go test / coverage artifacts
+*.test
+*.out
+coverage.html
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Vendored deps
+vendor/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local database data (if you run Postgres from a folder in the repo)
+pgdata/

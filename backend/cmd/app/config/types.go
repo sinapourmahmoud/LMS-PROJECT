@@ -7,6 +7,7 @@ type config struct {
 		Name        string `env:"APPLICATION_NAME"     envDefault:"LMS"`
 		Environment string `env:"APPLICATION_ENV"     envDefault:"local"`
 		Version     string `env:"APPLICATION_VERSION"     envDefault:"0.1"`
+		PORT        string `env:"APPLICATION_PORT"     envDefault:"8080"`
 	}
 
 	Database struct {
@@ -17,7 +18,7 @@ type config struct {
 		DB_NAME     string `env:"DB_NAME" envDefault:"lms"`
 		DB_SSLMODE  string `env:"DB_SSLMODE" envDefault:"disable"`
 	}
-	
+
 	Auth struct {
 		JWTAccessSecret   string `env:"JWT_ACCESS_SECRET"`
 		JWTRefreshSecret  string `env:"JWT_REFRESH_SECRET"`
