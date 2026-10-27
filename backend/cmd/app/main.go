@@ -10,6 +10,9 @@ import (
 	courseServices "github.com/lms-project/backend/internal/course/domain/services"
 	coursePostgres "github.com/lms-project/backend/internal/course/infrastructure/postgres"
 	coursehttp "github.com/lms-project/backend/internal/course/interfaces/http"
+	enrollmentServices "github.com/lms-project/backend/internal/enrollment/domain/services"
+	enrollmentPostgres "github.com/lms-project/backend/internal/enrollment/infrastructure/postgres"
+	enrollmenthttp "github.com/lms-project/backend/internal/enrollment/interfaces/http"
 	"github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/internal/user/domain/services"
 	"github.com/lms-project/backend/internal/user/infrastructure/postgres"
@@ -46,6 +49,10 @@ func main() {
 	courseCommandServices := courseServices.NewCourseCommandServices(courseRepository, userRepository)
 	courseQueryServices := courseServices.NewCourseQueryServices(courseRepository, userRepository)
 	courseHandler := coursehttp.NewCourseHandler(courseCommandServices, courseQueryServices)
+	enrollmentRepository := enrollmentPostgres.NewEnrollmentRepository(db)
+	enrollmentCommandServices := enrollmentServices.NewEnrollmentCommandServices(enrollmentRepository, courseRepository)
+	enrollmentQueryServices := enrollmentServices.NewEnrollmentQueryServices(enrollmentRepository, courseRepository)
+	enrollmentHandler := enrollmenthttp.NewEnrollmentHandler(enrollmentCommandServices, enrollmentQueryServices)
 
 	router := gin.Default()
 
@@ -79,6 +86,11 @@ func main() {
 	router.DELETE("/courses/:id", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher, entity.RoleAdmin), courseHandler.DeleteCourse())
 
 	log.Println("server listening on :", config.Config.Application.PORT)
+
+	// enrollment
+	router.POST("/courses/:id/enroll", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleStudent), enrollmentHandler.Enroll())
+	router.GET("/enrollments/mine", middleware.AuthMiddleware(userQuesryServices), enrollmentHandler.ListMyEnrollments())
+	router.GET("/courses/:id/enrollments", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher, entity.RoleAdmin), enrollmentHandler.ListCourseEnrollments())
 
 	if err := router.Run(":" + config.Config.Application.PORT); err != nil {
 		log.Fatal(err)

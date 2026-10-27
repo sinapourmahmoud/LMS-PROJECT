@@ -8,16 +8,17 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jmoiron/sqlx"
 	"github.com/lms-project/backend/internal/enrollment/domain/entity"
 	"github.com/lms-project/backend/internal/enrollment/domain/repository"
 	"github.com/lms-project/backend/pkg/errorhandler"
 )
 
 type enrollmentRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewEnrollmentRepository(db *sql.DB) repository.EnrollmentRepository {
+func NewEnrollmentRepository(db *sqlx.DB) repository.EnrollmentRepository {
 
 	return &enrollmentRepository{
 		db: db,
