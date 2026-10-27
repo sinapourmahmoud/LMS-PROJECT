@@ -143,7 +143,6 @@ func (h *handler) Logout() gin.HandlerFunc {
 
 		token, err := c.Cookie("refresh_token")
 
-
 		if err == nil {
 			resErr := h.userQueryDomainServices.Logout(c, token)
 

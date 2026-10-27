@@ -24,8 +24,6 @@ func New(code int, message interface{}, statusCode int) *Response {
 	}
 }
 
-
-
 type FieldError struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`

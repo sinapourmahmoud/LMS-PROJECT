@@ -281,7 +281,7 @@ func (r *courseRepository) UpdateStatus(ctx context.Context, id uuid.UUID, statu
 
 	query := `UPDATE courses SET status=$1 WHERE id=$2`
 
-	_, err := r.db.ExecContext(ctx, query,status, id)
+	_, err := r.db.ExecContext(ctx, query, status, id)
 
 	if err != nil {
 		return &errorhandler.Response{
@@ -301,7 +301,7 @@ func (r *courseRepository) Delete(ctx context.Context, id uuid.UUID) *errorhandl
 	DELETE FROM courses WHERE id = $1
 	`
 
-	result, err := r.db.ExecContext(ctx, query,id)
+	result, err := r.db.ExecContext(ctx, query, id)
 
 	if err != nil {
 		return &errorhandler.Response{

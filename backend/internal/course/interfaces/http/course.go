@@ -1,8 +1,6 @@
 package http
 
 import (
-	"reflect"
-	"strings"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -10,6 +8,8 @@ import (
 	"github.com/lms-project/backend/internal/course/domain/services"
 	userEntity "github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/pkg/errorhandler"
+	"reflect"
+	"strings"
 )
 
 var validate = validator.New()
@@ -23,9 +23,6 @@ func init() {
 		return name
 	})
 }
-
-
-
 
 type handler struct {
 	courseCommandServices services.CourseCommandDomainServices

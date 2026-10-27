@@ -118,3 +118,72 @@ func TestEnroll(t *testing.T) {
 		})
 	}
 }
+
+
+func TestUnEnroll(t *testing.T) {
+	studentID := uuid.New()
+	courseID := uuid.New()
+	dbErr := &errorhandler.Response{Code: errorhandler.DatabaseErrorCode, StatusCode: 500}
+	enrolled := entity.NewEnrollment(uuid.New(), studentID, courseID, time.Now())
+
+	tests := []struct {
+		name            string
+		enrollmentRepo  *fakeEnrollmentRepo
+		wantStatus      int // 0 means success
+		wantCode        int
+		wantDeleteCalls int
+	}{
+		{
+			name:            "success",
+			enrollmentRepo:  &fakeEnrollmentRepo{existing: enrolled},
+			wantDeleteCalls: 1,
+		},
+		{
+			name:           "not enrolled",
+			enrollmentRepo: &fakeEnrollmentRepo{existing: nil},
+			wantStatus:     404,
+			wantCode:       errorhandler.NotEnrolledErrorCode,
+		},
+		{
+			name:           "find fails",
+			enrollmentRepo: &fakeEnrollmentRepo{findErr: dbErr},
+			wantStatus:     500,
+			wantCode:       errorhandler.DatabaseErrorCode,
+		},
+		{
+			name:            "delete fails",
+			enrollmentRepo:  &fakeEnrollmentRepo{existing: enrolled, deleteErr: dbErr},
+			wantStatus:      500,
+			wantCode:        errorhandler.DatabaseErrorCode,
+			wantDeleteCalls: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc := NewEnrollmentCommandServices(tt.enrollmentRepo, &fakeCourseRepo{})
+
+			resErr := svc.UnEnroll(context.Background(), studentID, courseID)
+
+			if tt.wantStatus == 0 {
+				if resErr != nil {
+					t.Fatalf("expected success, got error: %+v", resErr)
+				}
+			} else {
+				if resErr == nil {
+					t.Fatalf("expected status %d, got success", tt.wantStatus)
+				}
+				if resErr.StatusCode != tt.wantStatus {
+					t.Errorf("status = %d, want %d", resErr.StatusCode, tt.wantStatus)
+				}
+				if resErr.Code != tt.wantCode {
+					t.Errorf("code = %d, want %d", resErr.Code, tt.wantCode)
+				}
+			}
+
+			if tt.enrollmentRepo.deleteCalls != tt.wantDeleteCalls {
+				t.Errorf("Delete called %d times, want %d", tt.enrollmentRepo.deleteCalls, tt.wantDeleteCalls)
+			}
+		})
+	}
+}

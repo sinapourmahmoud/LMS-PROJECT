@@ -105,7 +105,7 @@ func (r *refreshTokenRepository) FindByID(ctx context.Context, id uuid.UUID) (*e
 	`
 
 	var (
-		sessionID        uuid.UUID
+		sessionID uuid.UUID
 		userID    uuid.UUID
 		tokenHash string
 		expiresAt time.Time

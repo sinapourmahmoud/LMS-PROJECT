@@ -29,7 +29,7 @@ const (
 // Enrollment related error codes
 const (
 	AlreadyEnrolledErrorCode = 400
-	NotEnrolledErrorCode = 404
+	NotEnrolledErrorCode     = 404
 )
 
 const (
@@ -65,7 +65,6 @@ const (
 const (
 	CourseNotFoundMessage = "Course not found"
 )
-
 
 const (
 	NotEnrolledErrorMessage = "You are not enrolled in this course"
