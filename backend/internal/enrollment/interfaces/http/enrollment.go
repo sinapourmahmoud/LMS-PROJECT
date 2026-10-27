@@ -8,7 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/lms-project/backend/internal/enrollment/domain/services"
-	userEntity"github.com/lms-project/backend/internal/user/domain/entity"
+	userEntity "github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/pkg/errorhandler"
 )
 
@@ -106,4 +106,28 @@ func (h *handler) ListCourseEnrollments() gin.HandlerFunc {
 
 	}
 
+}
+
+func (h *handler) Unenroll() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		courseID, err := uuid.Parse(c.Param("id"))
+
+		if err != nil {
+			c.JSON(400, &errorhandler.Response{Code: errorhandler.ValidationErrorCode, Message: "invalid course id", StatusCode: 400})
+			return
+		}
+
+		studentID := c.MustGet("userID").(uuid.UUID)
+
+		resErr := h.enrollmentCommandServices.UnEnroll(c, studentID, courseID)
+
+		if resErr != nil {
+			c.JSON(resErr.StatusCode, resErr)
+			return
+		}
+
+		c.JSON(200, gin.H{"Message": "Unenrolled"})
+
+	}
 }

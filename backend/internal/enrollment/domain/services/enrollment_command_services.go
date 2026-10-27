@@ -15,6 +15,7 @@ import (
 
 type EnrollmentCommandDomainServices interface {
 	Enroll(ctx context.Context, studentID uuid.UUID, courseID uuid.UUID) (*values.EnrollmentResponse, *errorhandler.Response)
+	UnEnroll(ctx context.Context, studentID uuid.UUID, courseID uuid.UUID) *errorhandler.Response
 }
 
 type enrollmentCommandServices struct {
@@ -68,4 +69,29 @@ func (r *enrollmentCommandServices) Enroll(ctx context.Context, studentID uuid.U
 	}
 
 	return values.NewEnrollmentResponse(enrollment), nil
+}
+
+func (r *enrollmentCommandServices) UnEnroll(ctx context.Context, studentID uuid.UUID, courseID uuid.UUID) *errorhandler.Response {
+
+	enrollment, err := r.enrollmentRepository.FindByStudentAndCourse(ctx, studentID, courseID)
+
+	if err != nil {
+		return err
+	}
+
+	if enrollment == nil {
+		return &errorhandler.Response{
+			Code:       errorhandler.NotEnrolledErrorCode,
+			StatusCode: errorhandler.NotEnrolledErrorCode,
+			Message:    errorhandler.NotEnrolledErrorMessage,
+		}
+	}
+
+	err = r.enrollmentRepository.Delete(ctx, studentID, courseID)
+
+	if err != nil {
+		return err
+	}
+	return nil
+
 }

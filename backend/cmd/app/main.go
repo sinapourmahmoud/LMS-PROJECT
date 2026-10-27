@@ -91,6 +91,7 @@ func main() {
 	router.POST("/courses/:id/enroll", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleStudent), enrollmentHandler.Enroll())
 	router.GET("/enrollments/mine", middleware.AuthMiddleware(userQuesryServices), enrollmentHandler.ListMyEnrollments())
 	router.GET("/courses/:id/enrollments", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher, entity.RoleAdmin), enrollmentHandler.ListCourseEnrollments())
+	router.DELETE("/courses/:id/enroll", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleStudent), enrollmentHandler.Unenroll())
 
 	if err := router.Run(":" + config.Config.Application.PORT); err != nil {
 		log.Fatal(err)

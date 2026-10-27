@@ -177,3 +177,23 @@ func (r *enrollmentRepository) ListByStudent(ctx context.Context, studentID uuid
 	return enrollments, nil
 
 }
+
+func (r *enrollmentRepository) Delete(ctx context.Context, studentID uuid.UUID, courseID uuid.UUID) *errorhandler.Response {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	query := `DELETE * enrollments WHERE student_id=$1 AND course_id=$2`
+
+	_, err := r.db.DB.ExecContext(ctx, query, studentID, courseID)
+
+	if err != nil {
+		return &errorhandler.Response{
+			Code:       errorhandler.DatabaseErrorCode,
+			Message:    errorhandler.DatabaseErrorMessage,
+			StatusCode: 500,
+		}
+	}
+
+	return nil
+
+}
