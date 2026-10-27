@@ -1,0 +1,22 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Git and editor files
+.git
+.gitignore
+.idea/
+.vscode/
+
+# Docker files themselves
+docker/
+
+# Docs and logs
+*.md
+*.log
+
+# Local build output and test files
+bin/
+*.test
+*.out
