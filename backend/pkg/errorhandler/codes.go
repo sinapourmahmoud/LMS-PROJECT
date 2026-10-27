@@ -29,7 +29,7 @@ const (
 // Enrollment related error codes
 const (
 	AlreadyEnrolledErrorCode = 400
-	NotEnrolledErrorCode = 401
+	NotEnrolledErrorCode = 404
 )
 
 const (

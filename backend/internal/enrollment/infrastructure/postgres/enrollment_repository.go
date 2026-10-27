@@ -182,7 +182,7 @@ func (r *enrollmentRepository) Delete(ctx context.Context, studentID uuid.UUID, 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	query := `DELETE * enrollments WHERE student_id=$1 AND course_id=$2`
+	query := `DELETE FROM enrollments WHERE student_id=$1 AND course_id=$2`
 
 	_, err := r.db.DB.ExecContext(ctx, query, studentID, courseID)
 

@@ -30,6 +30,8 @@ type fakeEnrollmentRepo struct {
 	list        []*entity.Enrollment
 	listErr     *errorhandler.Response
 	listCalls   int
+	deleteErr   *errorhandler.Response
+	deleteCalls int
 }
 
 func (f *fakeEnrollmentRepo) Create(ctx context.Context, e *entity.Enrollment) *errorhandler.Response {
@@ -49,4 +51,9 @@ func (f *fakeEnrollmentRepo) ListByCourse(ctx context.Context, courseID uuid.UUI
 func (f *fakeEnrollmentRepo) ListByStudent(ctx context.Context, studentID uuid.UUID) ([]*entity.Enrollment, *errorhandler.Response) {
 	f.listCalls++
 	return f.list, f.listErr
+}
+
+func (f *fakeEnrollmentRepo) Delete(ctx context.Context, studentID, courseID uuid.UUID) *errorhandler.Response {
+	f.deleteCalls++
+	return f.deleteErr
 }
