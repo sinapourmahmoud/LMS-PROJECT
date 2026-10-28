@@ -22,6 +22,10 @@ import (
 
 func main() {
 
+	if config.Config.Auth.JWTAccessSecret == "" || config.Config.Auth.JWTRefreshSecret == "" {
+		log.Fatal("JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be set")
+	}
+
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
 		config.Config.Database.DB_USER,

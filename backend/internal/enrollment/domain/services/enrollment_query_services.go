@@ -46,7 +46,7 @@ func (r *enrollmentQueryServices) ListByStudent(ctx context.Context, studentID u
 
 }
 
-func (r *enrollmentQueryServices) ListByCourse(ctx context.Context, courseID uuid.UUID, requesterID uuid.UUID, requesterRole userEntity.Role) ([]*values.EnrollmentResponse, *errorhandler.Response) {
+func (r *enrollmentQueryServices) ListByCourse(ctx context.Context, courseID uuid.UUID, requesterID uuid.UUID, requesterRole userEntity.Role) ([]*values.RosterEntry, *errorhandler.Response) {
 
 	course, err := r.courseRepository.GetByID(ctx, courseID)
 
@@ -70,17 +70,11 @@ func (r *enrollmentQueryServices) ListByCourse(ctx context.Context, courseID uui
 		}
 	}
 
-	entityEnrollments, err := r.enrollmentRepository.ListByCourse(ctx, courseID)
+	roster, err := r.enrollmentRepository.ListRosterByCourse(ctx, courseID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	enrollments := make([]*values.EnrollmentResponse, 0, len(entityEnrollments))
-
-	for _, enrollment := range entityEnrollments {
-		enrollments = append(enrollments, values.NewEnrollmentResponse(enrollment))
-	}
-
-	return enrollments, nil
+	return roster, nil
 }

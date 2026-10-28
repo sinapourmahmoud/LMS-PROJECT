@@ -82,7 +82,7 @@ func (r *enrollmentCommandServices) UnEnroll(ctx context.Context, studentID uuid
 	if enrollment == nil {
 		return &errorhandler.Response{
 			Code:       errorhandler.NotEnrolledErrorCode,
-			StatusCode: 401,
+			StatusCode: 404,
 			Message:    errorhandler.NotEnrolledErrorMessage,
 		}
 	}

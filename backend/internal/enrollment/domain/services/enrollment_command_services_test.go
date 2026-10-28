@@ -119,7 +119,6 @@ func TestEnroll(t *testing.T) {
 	}
 }
 
-
 func TestUnEnroll(t *testing.T) {
 	studentID := uuid.New()
 	courseID := uuid.New()

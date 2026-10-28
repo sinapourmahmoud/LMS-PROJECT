@@ -14,6 +14,8 @@ type EnrollmentResponse struct {
 	EnrolledAt time.Time `json:"enrolled_at"`
 }
 
+
+
 func NewEnrollmentResponse(e *entity.Enrollment) *EnrollmentResponse {
 	return &EnrollmentResponse{
 		ID:         e.GetID(),

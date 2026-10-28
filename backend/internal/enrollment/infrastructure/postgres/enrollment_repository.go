@@ -11,6 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lms-project/backend/internal/enrollment/domain/entity"
 	"github.com/lms-project/backend/internal/enrollment/domain/repository"
+	"github.com/lms-project/backend/internal/enrollment/domain/values"
 	"github.com/lms-project/backend/pkg/errorhandler"
 )
 
@@ -195,5 +196,54 @@ func (r *enrollmentRepository) Delete(ctx context.Context, studentID uuid.UUID, 
 	}
 
 	return nil
+
+}
+
+func (r *enrollmentRepository) ListRosterByCourse(ctx context.Context, courseID uuid.UUID) ([]*values.RosterEntry, *errorhandler.Response) {
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	query := `SELECT e.student_id, u.username, u.email, e.enrolled_at
+	FROM enrollments e
+	JOIN users u ON u.id = e.student_id
+	WHERE e.course_id = $1
+	ORDER BY e.enrolled_at`
+
+	rows, err := r.db.QueryContext(ctx, query, courseID)
+
+	if err != nil {
+		return nil, &errorhandler.Response{
+			Code:       errorhandler.DatabaseErrorCode,
+			Message:    err.Error(),
+			StatusCode: 500,
+		}
+	}
+
+	var enrollments = make([]*values.RosterEntry, 0)
+
+	for rows.Next() {
+
+		var (
+			studentID  uuid.UUID
+			userName   string
+			email      string
+			enrolledAt time.Time
+		)
+
+		if err := rows.Scan(&studentID, &userName, &email, &enrolledAt); err != nil {
+			return nil, &errorhandler.Response{
+				Code:       errorhandler.DatabaseErrorCode,
+				Message:    errorhandler.DatabaseErrorMessage,
+				StatusCode: 500,
+			}
+		}
+		enrollments = append(enrollments, &values.RosterEntry{StudentID: studentID, Username: userName, Email: email, EnrolledAt: enrolledAt})
+
+	}
+	if err := rows.Err(); err != nil {
+		return nil, &errorhandler.Response{Code: errorhandler.DatabaseErrorCode, Message: errorhandler.DatabaseErrorMessage, StatusCode: 500}
+	}
+	return enrollments, nil
 
 }
