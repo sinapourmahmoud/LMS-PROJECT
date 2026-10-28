@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	courseEntity "github.com/lms-project/backend/internal/course/domain/entity"
 	"github.com/lms-project/backend/internal/enrollment/domain/entity"
+	"github.com/lms-project/backend/internal/enrollment/domain/values"
 	userEntity "github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/pkg/errorhandler"
 )
@@ -16,9 +17,9 @@ func TestListByCourse(t *testing.T) {
 	teacherID := uuid.New()
 	courseID := uuid.New()
 	course := courseEntity.NewCourse(courseID, "title", "desc", teacherID, courseEntity.StatusPublished, time.Now(), nil)
-	enrollments := []*entity.Enrollment{
-		entity.NewEnrollment(uuid.New(), uuid.New(), courseID, time.Now()),
-		entity.NewEnrollment(uuid.New(), uuid.New(), courseID, time.Now()),
+	roster := []*values.RosterEntry{
+		{StudentID: uuid.New(), Username: "ali", Email: "ali@test.com", EnrolledAt: time.Now()},
+		{StudentID: uuid.New(), Username: "sara", Email: "sara@test.com", EnrolledAt: time.Now()},
 	}
 
 	tests := []struct {
@@ -39,7 +40,7 @@ func TestListByCourse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			enrollmentRepo := &fakeEnrollmentRepo{list: enrollments}
+			enrollmentRepo := &fakeEnrollmentRepo{listRoster: roster}
 			svc := NewEnrollmentQueryServices(enrollmentRepo, &fakeCourseRepo{course: tt.course})
 
 			res, resErr := svc.ListByCourse(context.Background(), courseID, tt.requesterID, tt.requesterRole)
@@ -65,6 +66,37 @@ func TestListByCourse(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestListByCourseRoster(t *testing.T) {
+	teacherID := uuid.New()
+	courseID := uuid.New()
+	course := courseEntity.NewCourse(courseID, "title", "desc", teacherID, courseEntity.StatusPublished, time.Now(), nil)
+
+	t.Run("returns the roster from the repository", func(t *testing.T) {
+		want := []*values.RosterEntry{{StudentID: uuid.New(), Username: "ali", Email: "ali@test.com", EnrolledAt: time.Now()}}
+		svc := NewEnrollmentQueryServices(&fakeEnrollmentRepo{listRoster: want}, &fakeCourseRepo{course: course})
+
+		res, resErr := svc.ListByCourse(context.Background(), courseID, teacherID, userEntity.RoleTeacher)
+
+		if resErr != nil {
+			t.Fatalf("unexpected error: %+v", resErr)
+		}
+		if len(res) != 1 || res[0].Username != "ali" || res[0].Email != "ali@test.com" {
+			t.Errorf("unexpected roster: %+v", res)
+		}
+	})
+
+	t.Run("repository error is passed through", func(t *testing.T) {
+		dbErr := &errorhandler.Response{Code: errorhandler.DatabaseErrorCode, StatusCode: 500}
+		svc := NewEnrollmentQueryServices(&fakeEnrollmentRepo{rosterErr: dbErr}, &fakeCourseRepo{course: course})
+
+		res, resErr := svc.ListByCourse(context.Background(), courseID, teacherID, userEntity.RoleTeacher)
+
+		if res != nil || resErr == nil || resErr.StatusCode != 500 {
+			t.Errorf("want the 500 error, got res=%v err=%+v", res, resErr)
+		}
+	})
 }
 
 func TestListByStudent(t *testing.T) {

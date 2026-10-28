@@ -13,7 +13,7 @@ import (
 
 type EnrollmentQueryDomainServices interface {
 	ListByStudent(ctx context.Context, studentID uuid.UUID) ([]*values.EnrollmentResponse, *errorhandler.Response)
-	ListByCourse(ctx context.Context, courseID uuid.UUID, requesterID uuid.UUID, requesterRole userEntity.Role) ([]*values.EnrollmentResponse, *errorhandler.Response)
+	ListByCourse(ctx context.Context, courseID uuid.UUID, requesterID uuid.UUID, requesterRole userEntity.Role) ([]*values.RosterEntry, *errorhandler.Response)
 }
 
 type enrollmentQueryServices struct {

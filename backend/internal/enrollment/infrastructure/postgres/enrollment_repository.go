@@ -98,7 +98,7 @@ func (r *enrollmentRepository) ListByCourse(ctx context.Context, courseID uuid.U
 	if err != nil {
 		return nil, &errorhandler.Response{
 			Code:       errorhandler.DatabaseErrorCode,
-			Message:    err.Error(),
+			Message:    errorhandler.DatabaseErrorMessage,
 			StatusCode: 500,
 		}
 	}
@@ -116,7 +116,7 @@ func (r *enrollmentRepository) ListByCourse(ctx context.Context, courseID uuid.U
 		if err := rows.Scan(&id, &sID, &cID, &enrolledAt); err != nil {
 			return nil, &errorhandler.Response{
 				Code:       errorhandler.DatabaseErrorCode,
-				Message:    err.Error(),
+				Message:    errorhandler.DatabaseErrorMessage,
 				StatusCode: 500,
 			}
 		}
@@ -219,6 +219,7 @@ func (r *enrollmentRepository) ListRosterByCourse(ctx context.Context, courseID 
 			StatusCode: 500,
 		}
 	}
+	defer rows.Close()
 
 	var enrollments = make([]*values.RosterEntry, 0)
 

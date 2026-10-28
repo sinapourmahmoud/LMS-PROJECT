@@ -7,6 +7,7 @@ import (
 	courseEntity "github.com/lms-project/backend/internal/course/domain/entity"
 	courseRepository "github.com/lms-project/backend/internal/course/domain/repository"
 	"github.com/lms-project/backend/internal/enrollment/domain/entity"
+	"github.com/lms-project/backend/internal/enrollment/domain/values"
 	"github.com/lms-project/backend/pkg/errorhandler"
 )
 
@@ -30,6 +31,8 @@ type fakeEnrollmentRepo struct {
 	list        []*entity.Enrollment
 	listErr     *errorhandler.Response
 	listCalls   int
+	listRoster  []*values.RosterEntry
+	rosterErr   *errorhandler.Response
 	deleteErr   *errorhandler.Response
 	deleteCalls int
 }
@@ -56,4 +59,9 @@ func (f *fakeEnrollmentRepo) ListByStudent(ctx context.Context, studentID uuid.U
 func (f *fakeEnrollmentRepo) Delete(ctx context.Context, studentID, courseID uuid.UUID) *errorhandler.Response {
 	f.deleteCalls++
 	return f.deleteErr
+}
+
+func (f *fakeEnrollmentRepo) ListRosterByCourse(ctx context.Context, courseID uuid.UUID) ([]*values.RosterEntry, *errorhandler.Response) {
+	f.listCalls++
+	return f.listRoster, f.rosterErr
 }
