@@ -116,14 +116,43 @@ Protected endpoints need the header `Authorization: Bearer <access_token>`.
 | GET | `/courses/pending` | admin | List courses waiting for approval |
 | PATCH | `/courses/:id/approve` | admin | Publish a pending course |
 | DELETE | `/courses/:id` | teacher (owner) or admin | Delete a course |
- 
+ Here is the whole `### Enrollments` section of `backend/README.md` rewritten. Replace everything from the `### Enrollments` heading down to (but not including) `### Errors`:
+
+````markdown
 ### Enrollments
- 
+
 | Method | Path | Who | Description |
 | --- | --- | --- | --- |
 | POST | `/courses/:id/enroll` | student | Enroll in a published course (409 if already enrolled) |
+| DELETE | `/courses/:id/enroll` | student | Un-enroll from a course (404 if not enrolled) |
 | GET | `/enrollments/mine` | logged in | List your enrollments |
-| GET | `/courses/:id/enrollments` | teacher (owner) or admin | List the students enrolled in a course |
+| GET | `/courses/:id/enrollments` | teacher (owner) or admin | List the students enrolled in a course, with their names |
+
+`GET /courses/:id/enrollments` returns the course roster (an empty course returns `[]`), ordered by enrollment date:
+
+```json
+[
+  {
+    "student_id": "6f1c2a1e-0000-0000-0000-000000000000",
+    "username": "ali",
+    "email": "ali@example.com",
+    "enrolled_at": "2026-10-28T10:00:00Z"
+  }
+]
+```
+
+Another teacher or a student calling this endpoint gets `403`. An unknown course gets `404`.
+
+````
+
+And in the "Typical flow" list, change step 5 and add a step 6 so it reads:
+
+```markdown
+5. The student lists their courses (`GET /enrollments/mine`); the teacher lists the roster with names and emails (`GET /courses/:id/enrollments`).
+6. The student can leave the course (`DELETE /courses/:id/enroll`); leaving a course they are not in returns 404.
+```
+
+Also add a blank line between step 6 and the `## Tests` heading. Right now that heading is stuck directly under the list, which can break the formatting.
  
 ### Errors
  
@@ -152,7 +181,8 @@ Use your own `DB_USER` and `DB_NAME` if they differ, and log in again to get a t
 2. The teacher creates a course (`POST /courses`).
 3. The admin approves it (`PATCH /courses/:id/approve`).
 4. The student enrolls (`POST /courses/:id/enroll`); enrolling twice returns 409.
-5. The student lists their courses (`GET /enrollments/mine`); the teacher lists the roster (`GET /courses/:id/enrollments`).
+5. The student lists their courses (`GET /enrollments/mine`); the teacher lists the roster with names and emails (`GET /courses/:id/enrollments`).
+6. The student can leave the course (`DELETE /courses/:id/enroll`); leaving a course they are not in returns 404.
 ## Tests
  
 ```bash
