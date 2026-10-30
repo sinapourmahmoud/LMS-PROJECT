@@ -69,3 +69,15 @@ const (
 const (
 	NotEnrolledErrorMessage = "You are not enrolled in this course"
 )
+
+
+const (
+	LessonNotFoundErrorCode      = 500
+	LessonPositionTakenErrorCode = 501
+)
+
+// Lesson related error messages
+const (
+	LessonNotFoundMessage      = "Lesson not found"
+	LessonPositionTakenMessage = "Another lesson in this course already has this position"
+)
