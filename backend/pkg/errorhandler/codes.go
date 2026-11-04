@@ -70,7 +70,6 @@ const (
 	NotEnrolledErrorMessage = "You are not enrolled in this course"
 )
 
-
 const (
 	LessonNotFoundErrorCode      = 500
 	LessonPositionTakenErrorCode = 501
