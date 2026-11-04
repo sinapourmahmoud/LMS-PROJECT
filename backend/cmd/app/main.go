@@ -13,6 +13,9 @@ import (
 	enrollmentServices "github.com/lms-project/backend/internal/enrollment/domain/services"
 	enrollmentPostgres "github.com/lms-project/backend/internal/enrollment/infrastructure/postgres"
 	enrollmenthttp "github.com/lms-project/backend/internal/enrollment/interfaces/http"
+	lessonServices "github.com/lms-project/backend/internal/lesson/domain/services"
+	lessonPostgres "github.com/lms-project/backend/internal/lesson/infrastructure/postgres"
+	lessonhttp "github.com/lms-project/backend/internal/lesson/interfaces/http"
 	"github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/internal/user/domain/services"
 	"github.com/lms-project/backend/internal/user/infrastructure/postgres"
@@ -57,6 +60,10 @@ func main() {
 	enrollmentCommandServices := enrollmentServices.NewEnrollmentCommandServices(enrollmentRepository, courseRepository)
 	enrollmentQueryServices := enrollmentServices.NewEnrollmentQueryServices(enrollmentRepository, courseRepository)
 	enrollmentHandler := enrollmenthttp.NewEnrollmentHandler(enrollmentCommandServices, enrollmentQueryServices)
+	lessonRepository := lessonPostgres.NewLessonRepository(db)
+	lessonCommandServices := lessonServices.NewLessonCommandServices(lessonRepository, courseRepository)
+	lessonQueryServices := lessonServices.NewLessonQueryServices(lessonRepository, courseRepository, enrollmentRepository)
+	lessonHandler := lessonhttp.NewLessonHandler(lessonCommandServices, lessonQueryServices)
 
 	router := gin.Default()
 
@@ -96,6 +103,14 @@ func main() {
 	router.GET("/enrollments/mine", middleware.AuthMiddleware(userQuesryServices), enrollmentHandler.ListMyEnrollments())
 	router.GET("/courses/:id/enrollments", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher, entity.RoleAdmin), enrollmentHandler.ListCourseEnrollments())
 	router.DELETE("/courses/:id/enroll", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleStudent), enrollmentHandler.Unenroll())
+
+	// lesson
+	// lesson
+	router.POST("/courses/:id/lessons", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher), lessonHandler.CreateLesson())
+	router.GET("/courses/:id/lessons", middleware.AuthMiddleware(userQuesryServices), lessonHandler.ListLessons())
+	router.GET("/lessons/:id", middleware.AuthMiddleware(userQuesryServices), lessonHandler.GetLesson())
+	router.PUT("/lessons/:id", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher), lessonHandler.UpdateLesson())
+	router.DELETE("/lessons/:id", middleware.AuthMiddleware(userQuesryServices), middleware.RequireRole(entity.RoleTeacher, entity.RoleAdmin), lessonHandler.DeleteLesson())
 
 	if err := router.Run(":" + config.Config.Application.PORT); err != nil {
 		log.Fatal(err)
