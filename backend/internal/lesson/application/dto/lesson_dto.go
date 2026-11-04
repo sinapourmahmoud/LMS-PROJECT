@@ -1,7 +1,7 @@
 package dto
 
 type LessonRequest struct {
-	Title    string `json:"title" binding:"required"`
-	Content  string `json:"content" binding:"required"`
-	Position int    `json:"position" binding:"required,min=1"`
+	Title    string `json:"title" validate:"required"`
+	Content  string `json:"content" validate:"required"`
+	Position int    `json:"position" validate:"required,min=1"`
 }

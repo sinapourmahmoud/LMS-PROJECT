@@ -66,7 +66,7 @@ func (h *handler) CreateLesson() gin.HandlerFunc {
 
 		res, resErr := h.lessonCommandServices.Create(c, requesterID, courseID, request.Title, request.Content, request.Position)
 		if resErr != nil {
-			c.JSON(resErr.Code, resErr)
+			c.JSON(resErr.StatusCode, resErr)
 			return
 		}
 		c.JSON(201, res)
@@ -92,7 +92,7 @@ func (h *handler) ListLessons() gin.HandlerFunc {
 		res, resErr := h.lessonQueryServices.ListByCourse(c, courseID, requesterID, requesterRole)
 
 		if resErr != nil {
-			c.JSON(resErr.Code, resErr)
+			c.JSON(resErr.StatusCode, resErr)
 			return
 		}
 
@@ -109,7 +109,7 @@ func (h *handler) GetLesson() gin.HandlerFunc {
 		lessonID, err := uuid.Parse(c.Param("id"))
 
 		if err != nil {
-			c.JSON(400, &errorhandler.Response{Code: errorhandler.ValidationErrorCode, Message: "invalid course id", StatusCode: 400})
+			c.JSON(400, &errorhandler.Response{Code: errorhandler.ValidationErrorCode, Message: "invalid lesson id", StatusCode: 400})
 			return
 		}
 		requesterID := c.MustGet("userID").(uuid.UUID)
@@ -118,7 +118,7 @@ func (h *handler) GetLesson() gin.HandlerFunc {
 		res, resErr := h.lessonQueryServices.GetByID(c, lessonID, requesterID, requesterRole)
 
 		if resErr != nil {
-			c.JSON(resErr.Code, resErr)
+			c.JSON(resErr.StatusCode, resErr)
 			return
 		}
 		c.JSON(200, res)
@@ -133,7 +133,7 @@ func (h *handler) UpdateLesson() gin.HandlerFunc {
 		lessonID, err := uuid.Parse(c.Param("id"))
 
 		if err != nil {
-			c.JSON(400, &errorhandler.Response{Code: errorhandler.ValidationErrorCode, Message: "invalid course id", StatusCode: 400})
+			c.JSON(400, &errorhandler.Response{Code: errorhandler.ValidationErrorCode, Message: "invalid lesson id", StatusCode: 400})
 			return
 		}
 
@@ -155,7 +155,7 @@ func (h *handler) UpdateLesson() gin.HandlerFunc {
 		res, resErr := h.lessonCommandServices.Update(c, lessonID, request.Title, request.Content, request.Position, requesterID)
 
 		if resErr != nil {
-			c.JSON(resErr.Code, resErr)
+			c.JSON(resErr.StatusCode, resErr)
 			return
 		}
 
@@ -171,7 +171,7 @@ func (h *handler) DeleteLesson() gin.HandlerFunc {
 		lessonID, err := uuid.Parse(c.Param("id"))
 
 		if err != nil {
-			c.JSON(400, &errorhandler.Response{Code: errorhandler.ValidationErrorCode, Message: "invalid course id", StatusCode: 400})
+			c.JSON(400, &errorhandler.Response{Code: errorhandler.ValidationErrorCode, Message: "invalid lesson id", StatusCode: 400})
 			return
 		}
 		requesterID := c.MustGet("userID").(uuid.UUID)
@@ -180,7 +180,7 @@ func (h *handler) DeleteLesson() gin.HandlerFunc {
 		resErr := h.lessonCommandServices.Delete(c, lessonID, requesterID, requesterRole)
 
 		if resErr != nil {
-			c.JSON(resErr.Code, resErr)
+			c.JSON(resErr.StatusCode, resErr)
 			return
 		}
 		c.Status(204)
