@@ -9,7 +9,7 @@ import (
 )
 
 type LessonRepository interface {
-	Create(ctx context.Context, lessonEntity entity.Lesson) *errorhandler.Response
+	Create(ctx context.Context, lessonEntity *entity.Lesson) *errorhandler.Response
 	GetByID(ctx context.Context, lessonID uuid.UUID) (*entity.Lesson, *errorhandler.Response)
 	Update(ctx context.Context, lesson *entity.Lesson) *errorhandler.Response
 	Delete(ctx context.Context, lessonID uuid.UUID) *errorhandler.Response

@@ -24,7 +24,7 @@ func NewLessonRepository(db *sqlx.DB) repository.LessonRepository {
 	}
 }
 
-func (r *lessonRepository) Create(ctx context.Context, lessonEntity entity.Lesson) *errorhandler.Response {
+func (r *lessonRepository) Create(ctx context.Context, lessonEntity *entity.Lesson) *errorhandler.Response {
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -184,7 +184,7 @@ func (r *lessonRepository) ListByCourse(ctx context.Context, courseID uuid.UUID)
 
 	defer cancel()
 
-	query := `SELECT (id,course_id,title,content,position,created_at,updated_at) FROM lessons WHERE course_id=$1 ORDER BY position`
+	query := `SELECT id,course_id,title,content,position,created_at,updated_at FROM lessons WHERE course_id=$1 ORDER BY position`
 
 	rows, err := r.db.QueryContext(ctx, query, courseID)
 
