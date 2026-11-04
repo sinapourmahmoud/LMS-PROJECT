@@ -41,8 +41,6 @@ func (l *Lesson) GetUpdatedAt() *time.Time {
 	return l.updatedAt
 }
 
-
-
 func NewLesson(id uuid.UUID, courseId uuid.UUID, title string, content string, position int, createdAt time.Time, updatedAt *time.Time) *Lesson {
 	return &Lesson{
 		id:        id,
@@ -53,4 +51,13 @@ func NewLesson(id uuid.UUID, courseId uuid.UUID, title string, content string, p
 		createdAt: createdAt,
 		updatedAt: updatedAt,
 	}
+}
+
+// for updating the process
+func (l *Lesson) Update(title, content string, position int) {
+	now := time.Now()
+	l.title = title
+	l.content = content
+	l.position = position
+	l.updatedAt = &now
 }

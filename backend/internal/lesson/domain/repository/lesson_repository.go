@@ -13,4 +13,5 @@ type LessonRepository interface {
 	GetByID(ctx context.Context, lessonID uuid.UUID) (*entity.Lesson, *errorhandler.Response)
 	Update(ctx context.Context, lesson *entity.Lesson) *errorhandler.Response
 	Delete(ctx context.Context, lessonID uuid.UUID) *errorhandler.Response
+	ListByCourse(ctx context.Context,courseID uuid.UUID) ([]*entity.Lesson,*errorhandler.Response)
 }
