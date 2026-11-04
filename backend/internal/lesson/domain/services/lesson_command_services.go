@@ -16,7 +16,7 @@ import (
 type LessonCommandServices interface {
 	Create(ctx context.Context, creatorID uuid.UUID, courseID uuid.UUID, title string, content string, position int) (*values.LessonResponse, *errorhandler.Response)
 	Delete(ctx context.Context, lessonID uuid.UUID, requesterID uuid.UUID, requesterRole userEntity.Role) *errorhandler.Response
-	Update(ctx context.Context, lessonID uuid.UUID, title, content string, position int, requesterID uuid.UUID) (*values.LessonResponse,*errorhandler.Response)
+	Update(ctx context.Context, lessonID uuid.UUID, title, content string, position int, requesterID uuid.UUID) (*values.LessonResponse, *errorhandler.Response)
 }
 
 type lessonsCommandServices struct {
@@ -86,7 +86,7 @@ func (r *lessonsCommandServices) Delete(ctx context.Context, lessonID uuid.UUID,
 	course, err := r.courseRepository.GetByID(ctx, lesson.GetCourseID())
 
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if course == nil {
@@ -110,23 +110,23 @@ func (r *lessonsCommandServices) Delete(ctx context.Context, lessonID uuid.UUID,
 	return r.lessonRepository.Delete(ctx, lessonID)
 
 }
-func (r *lessonsCommandServices) Update(ctx context.Context, lessonID uuid.UUID, title, content string, position int, requesterID uuid.UUID) (*values.LessonResponse,*errorhandler.Response){
+func (r *lessonsCommandServices) Update(ctx context.Context, lessonID uuid.UUID, title, content string, position int, requesterID uuid.UUID) (*values.LessonResponse, *errorhandler.Response) {
 
-	lesson,err:=r.lessonRepository.GetByID(ctx,lessonID)
+	lesson, err := r.lessonRepository.GetByID(ctx, lessonID)
 
-	if err !=nil{
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
 
-	if lesson == nil{
-		return nil,&errorhandler.Response{
+	if lesson == nil {
+		return nil, &errorhandler.Response{
 			Code:       errorhandler.LessonNotFoundErrorCode,
 			Message:    errorhandler.LessonNotFoundMessage,
 			StatusCode: 404,
 		}
 	}
 
-		course, err := r.courseRepository.GetByID(ctx, lesson.GetCourseID())
+	course, err := r.courseRepository.GetByID(ctx, lesson.GetCourseID())
 
 	if err != nil {
 		return nil, err
@@ -158,4 +158,3 @@ func (r *lessonsCommandServices) Update(ctx context.Context, lessonID uuid.UUID,
 
 	return values.NewLessonResponse(lesson), nil
 }
-
