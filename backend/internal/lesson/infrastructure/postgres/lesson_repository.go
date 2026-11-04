@@ -1,4 +1,4 @@
-package infrastructure
+package postgres
 
 import (
 	"context"
@@ -41,11 +41,15 @@ func (r *lessonRepository) Create(ctx context.Context, lessonEntity entity.Lesso
 	)
 
 	if err != nil {
-		return &errorhandler.Response{
-			Code:       errorhandler.DatabaseErrorCode,
-			Message:    errorhandler.DatabaseErrorMessage,
-			StatusCode: 500,
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return &errorhandler.Response{
+				Code:       errorhandler.LessonPositionTakenErrorCode,
+				Message:    errorhandler.LessonPositionTakenMessage,
+				StatusCode: 409,
+			}
 		}
+		return &errorhandler.Response{Code: errorhandler.DatabaseErrorCode, Message: errorhandler.DatabaseErrorMessage, StatusCode: 500}
 	}
 
 	return nil
@@ -172,4 +176,66 @@ func (r *lessonRepository) Delete(ctx context.Context, id uuid.UUID) *errorhandl
 	}
 
 	return nil
+}
+
+func (r *lessonRepository) ListByCourse(ctx context.Context, courseID uuid.UUID) ([]*entity.Lesson, *errorhandler.Response) {
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+
+	defer cancel()
+
+	query := `SELECT (id,course_id,title,content,position,created_at,updated_at) FROM lessons WHERE course_id=$1 ORDER BY position`
+
+	rows, err := r.db.QueryContext(ctx, query, courseID)
+
+	if err != nil {
+
+		return nil, &errorhandler.Response{
+			Code:       errorhandler.DatabaseErrorCode,
+			Message:    errorhandler.DatabaseErrorMessage,
+			StatusCode: 500,
+		}
+	}
+
+	defer rows.Close()
+
+	lessons := make([]*entity.Lesson, 0)
+
+	for rows.Next() {
+		var (
+			id        uuid.UUID
+			cID       uuid.UUID
+			title     string
+			content   string
+			position  int
+			createdAt time.Time
+			updatedAt sql.NullTime
+		)
+
+		if err := rows.Scan(&id, &cID, &title, &content, &position, &createdAt, &updatedAt); err != nil {
+			return nil, &errorhandler.Response{
+				Code:       errorhandler.DatabaseErrorCode,
+				Message:    errorhandler.DatabaseErrorMessage,
+				StatusCode: 500,
+			}
+		}
+
+		var updatedAtPtr *time.Time
+		if updatedAt.Valid {
+			updatedAtPtr = &updatedAt.Time
+		}
+
+		lessons = append(lessons, entity.NewLesson(id, cID, title, content, position, createdAt, updatedAtPtr))
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, &errorhandler.Response{
+			Code:       errorhandler.DatabaseErrorCode,
+			Message:    errorhandler.DatabaseErrorMessage,
+			StatusCode: 500,
+		}
+	}
+
+	return lessons, nil
+
 }
