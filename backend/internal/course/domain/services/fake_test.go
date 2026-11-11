@@ -21,6 +21,10 @@ type fakeCourseRepo struct {
 	deleteCalls   int
 	updateCalls   int
 	updatedStatus entity.Status
+
+	total     int
+	gotLimit  int
+	gotOffset int
 }
 
 func (f *fakeCourseRepo) Create(ctx context.Context, course *entity.Course) *errorhandler.Response {
@@ -32,8 +36,10 @@ func (f *fakeCourseRepo) GetByID(ctx context.Context, id uuid.UUID) (*entity.Cou
 	return f.course, f.err
 }
 
-func (f *fakeCourseRepo) ListPublished(ctx context.Context) ([]*entity.Course, *errorhandler.Response) {
-	return f.list, f.err
+func (f *fakeCourseRepo) ListPublished(ctx context.Context, limit int, offset int) ([]*entity.Course, int, *errorhandler.Response) {
+	f.gotLimit = limit
+	f.gotOffset = offset
+	return f.list, f.total, f.err
 }
 
 func (f *fakeCourseRepo) ListByTeacher(ctx context.Context, teacherID uuid.UUID) ([]*entity.Course, *errorhandler.Response) {

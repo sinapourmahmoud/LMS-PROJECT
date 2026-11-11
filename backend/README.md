@@ -1,20 +1,22 @@
 # LMS Backend
- 
+
 A learning management system (LMS) backend written in Go. Teachers create courses and lessons, admins approve courses, and students enroll and read the lessons.
- 
+
 **Stack:** Go, Gin, PostgreSQL, JWT authentication, Docker Compose, GitHub Actions.
- 
+
 ## Features
- 
+
 - Sign up, log in, refresh tokens and log out (JWT access token + refresh token cookie)
 - Three roles: `student` (default), `teacher` and `admin`
 - Teachers create courses; new courses are `pending` until an admin approves them
 - Students enroll in published courses (no duplicate enrollments) and can un-enroll
 - Students see their own enrollments; the course's teacher and admins see the course roster with the students' names
 - Teachers add ordered lessons to their courses; enrolled students, the course's teacher and admins can read them
+- Paginated course list (`?page=` and `?limit=`)
 - Unit tests for the service layer and a CI/CD pipeline (GitHub Actions)
+
 ## Project structure
- 
+
 ```
 .
 ├── .github/workflows/      # ci.yml (checks) and cd.yml (publishes the Docker image)
@@ -31,68 +33,68 @@ A learning management system (LMS) backend written in Go. Teachers create course
     │       ├── infrastructure/postgres/  # PostgreSQL repositories
     │       └── interfaces/http/          # Gin handlers
     ├── migrations/         # SQL migrations (golang-migrate)
-    └── pkg/                # errorhandler, jwt, middleware
+    └── pkg/                # errorhandler, jwt, middleware, pagination
 ```
- 
+
 Every module under `internal/` has the same layers: `domain` (business rules), `infrastructure` (database), `interfaces` (HTTP) and `application` (request bodies).
- 
+
 ## Getting started
- 
+
 ### Run with Docker (recommended)
- 
+
 Requirements: Docker with the Compose plugin.
- 
+
 ```bash
 cd backend
 cp .env.example .env
 ```
- 
+
 Edit `.env`: set `DB_PASSWORD` and generate the two JWT secrets:
- 
+
 ```bash
 openssl rand -base64 48   # run twice: JWT_ACCESS_SECRET and JWT_REFRESH_SECRET
 ```
- 
+
 Start everything (PostgreSQL, migrations and the app):
- 
+
 ```bash
 docker compose -f docker/docker-compose.yml --env-file .env up --build
 ```
- 
+
 The API is now available at `http://localhost:8080`. New migrations are applied automatically every time you start the stack.
- 
+
 Stop it with `Ctrl+C`, or remove the containers with:
- 
+
 ```bash
 docker compose -f docker/docker-compose.yml down       # keeps the database data
 docker compose -f docker/docker-compose.yml down -v    # also deletes the database data
 ```
- 
+
 ### Run without Docker
- 
+
 Requirements: Go (see `go.mod`), PostgreSQL and the [`migrate`](https://github.com/golang-migrate/migrate) CLI.
- 
+
 ```bash
 cd backend
 cp .env.example .env          # set DB_HOST=localhost and your database settings
 migrate -path migrations -database "postgres://USER:PASSWORD@localhost:5432/lms?sslmode=disable" up
 go run ./cmd/app
 ```
- 
+
 ### Run the published image
- 
+
 Every push to `main` publishes the backend image to GitHub Container Registry:
- 
+
 ```bash
 docker pull ghcr.io/sinapourmahmoud/lms-project-backend:latest
 ```
- 
+
 Tags: `latest` (newest `main`) and `sha-<commit>` (one exact commit). The image needs the same environment variables as below and a PostgreSQL database that already has the migrations applied.
- 
+
 ## Configuration
- 
+
 All settings are environment variables (loaded from `backend/.env`). See `.env.example`.
- 
+
 | Variable | Default | Description |
 | --- | --- | --- |
 | `APPLICATION_PORT` | `8080` | Port the API listens on |
@@ -106,15 +108,15 @@ All settings are environment variables (loaded from `backend/.env`). See `.env.e
 | `JWT_REFRESH_SECRET` | none | Secret that signs refresh tokens (required) |
 | `ACCESS_TOKEN_TTL_MIN` | `15` | Access token lifetime in minutes |
 | `REFRESH_TOKEN_TTL_HR` | `168` | Refresh token lifetime in hours |
- 
+
 The app refuses to start if the two JWT secrets are empty. Never commit `.env`. It is listed in `.gitignore`.
- 
+
 ## API
- 
+
 Protected endpoints need the header `Authorization: Bearer <access_token>`.
- 
+
 ### Auth
- 
+
 | Method | Path | Who | Description |
 | --- | --- | --- | --- |
 | POST | `/signup` | anyone | Create an account (role `student`). Body: `username`, `email`, `password` (min 8 characters) |
@@ -122,30 +124,60 @@ Protected endpoints need the header `Authorization: Bearer <access_token>`.
 | POST | `/refresh` | anyone with the cookie | Returns a new access token |
 | POST | `/logout` | anyone with the cookie | Revokes the refresh token |
 | GET | `/whoami` | logged in | Returns your user ID |
- 
+
 ### Courses
- 
+
 | Method | Path | Who | Description |
 | --- | --- | --- | --- |
-| GET | `/courses` | anyone | List published courses |
+| GET | `/courses` | anyone | List published courses, one page at a time (see Pagination below) |
 | GET | `/courses/:id` | anyone | Get one course |
 | POST | `/courses` | teacher | Create a course (starts as `pending`). Body: `title`, `description` |
 | GET | `/courses/mine` | teacher | List your own courses |
 | GET | `/courses/pending` | admin | List courses waiting for approval |
 | PATCH | `/courses/:id/approve` | admin | Publish a pending course |
 | DELETE | `/courses/:id` | teacher (owner) or admin | Delete a course (its lessons are deleted with it) |
- 
+
+#### Pagination
+
+`GET /courses` takes two optional query parameters:
+
+| Parameter | Default | Description |
+| --- | --- | --- |
+| `page` | `1` | Page number, starting at 1 |
+| `limit` | `10` | Courses per page, from 1 to 100 |
+
+Example: `GET /courses?page=2&limit=5`. The response contains the courses of that page and the paging information:
+
+```json
+{
+  "items": [
+    {
+      "id": "6f1c2a1e-0000-0000-0000-000000000000",
+      "title": "Learn Go",
+      "description": "Go from zero",
+      "teacher_id": "9a7b3c2d-0000-0000-0000-000000000000",
+      "status": "published"
+    }
+  ],
+  "page": 2,
+  "limit": 5,
+  "total": 37
+}
+```
+
+`total` is the number of published courses in all pages. A page past the end returns `items: []`. A `page` or `limit` that is not a valid number, or a `limit` above 100, returns `400`.
+
 ### Enrollments
- 
+
 | Method | Path | Who | Description |
 | --- | --- | --- | --- |
 | POST | `/courses/:id/enroll` | student | Enroll in a published course (409 if already enrolled) |
 | DELETE | `/courses/:id/enroll` | student | Un-enroll from a course (404 if not enrolled) |
 | GET | `/enrollments/mine` | logged in | List your enrollments |
 | GET | `/courses/:id/enrollments` | teacher (owner) or admin | List the students enrolled in a course, with their names |
- 
+
 `GET /courses/:id/enrollments` returns the course roster (an empty course returns `[]`), ordered by enrollment date:
- 
+
 ```json
 [
   {
@@ -156,13 +188,13 @@ Protected endpoints need the header `Authorization: Bearer <access_token>`.
   }
 ]
 ```
- 
+
 Another teacher or a student calling this endpoint gets `403`. An unknown course gets `404`.
- 
+
 ### Lessons
- 
+
 Lessons belong to a course and are shown in the order of their `position` (1, 2, 3, ...). A course cannot have two lessons with the same position.
- 
+
 | Method | Path | Who | Description |
 | --- | --- | --- | --- |
 | POST | `/courses/:id/lessons` | teacher (owner) | Add a lesson. Body: `title`, `content`, `position` (min 1) |
@@ -170,9 +202,9 @@ Lessons belong to a course and are shown in the order of their `position` (1, 2,
 | GET | `/lessons/:id` | owner teacher, admin or enrolled student | Get one lesson |
 | PUT | `/lessons/:id` | teacher (owner) | Replace a lesson. Body: `title`, `content`, `position` (all required) |
 | DELETE | `/lessons/:id` | teacher (owner) or admin | Delete a lesson (204 with no body) |
- 
+
 A lesson looks like this:
- 
+
 ```json
 {
   "id": "0b8f7c4e-0000-0000-0000-000000000000",
@@ -184,19 +216,19 @@ A lesson looks like this:
   "updated_at": null
 }
 ```
- 
+
 Responses: `201` for create, `200` for read and update, `204` for delete. A student who is not enrolled, or a teacher who does not own the course, gets `403`. An unknown course or lesson gets `404`. A position that is already used in the course gets `409`.
- 
+
 ### Errors
- 
+
 Errors have this shape:
- 
+
 ```json
 { "code": 400, "message": "...", "status_code": 400 }
 ```
- 
+
 `code` identifies the error and `status_code` is the HTTP status. They are different numbers.
- 
+
 | Code | Meaning | Status |
 | --- | --- | --- |
 | 1 | Internal system error | 500 |
@@ -211,20 +243,20 @@ Errors have this shape:
 | 404 | Not enrolled in this course | 404 |
 | 500 | Lesson not found | 404 |
 | 501 | Another lesson in this course already has this position | 409 |
- 
+
 ## Creating the first admin
- 
+
 Everyone who signs up is a `student`, and there is no endpoint to create admins. Sign up normally, then promote the user in the database:
- 
+
 ```bash
 docker compose -f docker/docker-compose.yml exec db \
   psql -U postgres -d lms -c "UPDATE users SET role = 'admin' WHERE email = 'you@example.com';"
 ```
- 
+
 Use your own `DB_USER` and `DB_NAME` if they differ, and log in again to get a token with the new role. The same command with `'teacher'` creates a teacher.
- 
+
 ## Typical flow
- 
+
 1. Sign up a teacher, a student and an admin, and set their roles as described above.
 2. The teacher creates a course (`POST /courses`).
 3. The admin approves it (`PATCH /courses/:id/approve`).
@@ -233,42 +265,43 @@ Use your own `DB_USER` and `DB_NAME` if they differ, and log in again to get a t
 6. The student reads the lessons (`GET /courses/:id/lessons`); before enrolling this returns 403.
 7. The teacher lists the roster with names and emails (`GET /courses/:id/enrollments`).
 8. The student can leave the course (`DELETE /courses/:id/enroll`); leaving a course they are not in returns 404.
+
 ## Tests
- 
+
 ```bash
 cd backend
 go test ./...
 ```
- 
-The service layer (enrollments, courses and lessons) has unit tests that use fake repositories, so they need no database.
- 
+
+The service layer (enrollments, courses and lessons) has unit tests that use fake repositories, so they need no database. The pagination helper has its own unit tests.
+
 ## CI/CD
- 
+
 Two GitHub Actions workflows live in `.github/workflows/`:
- 
+
 | Workflow | Runs on | What it does |
 | --- | --- | --- |
 | `ci.yml` | pushes to `main` and pull requests to `main` | Checks formatting (`gofmt`), runs `go vet`, `go build` and `go test ./...` (job `test`), then builds the Docker image (job `docker`) |
 | `cd.yml` | pushes to `main` | Builds the Docker image and publishes it to `ghcr.io/sinapourmahmoud/lms-project-backend` with the tags `latest` and `sha-<commit>` |
- 
+
 `main` is protected: changes go through a pull request, and the `test` and `docker` checks must pass before it can be merged.
- 
+
 Before opening a pull request, run the same checks locally from `backend/`:
- 
+
 ```bash
 gofmt -l . && go vet ./... && go build ./... && go test ./...
 ```
- 
+
 `gofmt -l .` should print nothing.
- 
+
 ## Database migrations
- 
+
 SQL migrations live in `backend/migrations` and run automatically with Docker Compose. To add one:
- 
+
 ```bash
 migrate create -ext sql -dir migrations -seq create_something_table
 ```
- 
+
 Never edit a migration that has already been applied; add a new one instead.
- 
+
 Current migrations: users, refresh tokens, courses, enrollments and lessons.

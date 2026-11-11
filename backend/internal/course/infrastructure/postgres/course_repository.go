@@ -92,27 +92,37 @@ func (r *courseRepository) GetByID(ctx context.Context, id uuid.UUID) (*entity.C
 
 }
 
-func (r *courseRepository) ListPublished(ctx context.Context) ([]*entity.Course, *errorhandler.Response) {
+func (r *courseRepository) ListPublished(ctx context.Context, limit int, offset int) ([]*entity.Course, int, *errorhandler.Response) {
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 
 	defer cancel()
 
-	query := `SELECT id,title,description,teacher_id,status,created_at,updated_at FROM courses WHERE status=$1`
+	var total int
+	if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM courses WHERE status=$1`, entity.StatusPublished).Scan(&total); err != nil {
+		return nil, 0, &errorhandler.Response{
+			Code:       errorhandler.DatabaseErrorCode,
+			Message:    errorhandler.DatabaseErrorMessage,
+			StatusCode: 500,
+		}
+	}
 
-	rows, err := r.db.QueryContext(ctx, query, entity.StatusPublished)
+	query := `SELECT id,title,description,teacher_id,status,created_at,updated_at FROM courses WHERE status=$1 	ORDER BY created_at DESC, id
+	LIMIT $2 OFFSET $3`
+
+	rows, err := r.db.QueryContext(ctx, query, entity.StatusPublished, limit, offset)
 
 	if err != nil {
-		return nil, &errorhandler.Response{
+		return nil, 0, &errorhandler.Response{
 			Code:       errorhandler.DatabaseErrorCode,
-			Message:    err.Error(),
+			Message:    errorhandler.DatabaseErrorMessage,
 			StatusCode: 500,
 		}
 	}
 
 	defer rows.Close()
 
-	var courses []*entity.Course
+	courses := make([]*entity.Course, 0, limit)
 
 	for rows.Next() {
 
@@ -126,9 +136,9 @@ func (r *courseRepository) ListPublished(ctx context.Context) ([]*entity.Course,
 			updatedAt   sql.NullTime
 		)
 		if err := rows.Scan(&id, &title, &description, &teacherID, &status, &createdAt, &updatedAt); err != nil {
-			return nil, &errorhandler.Response{
+			return nil, 0, &errorhandler.Response{
 				Code:       errorhandler.DatabaseErrorCode,
-				Message:    err.Error(),
+				Message:    errorhandler.DatabaseErrorMessage,
 				StatusCode: 500,
 			}
 		}
@@ -142,14 +152,14 @@ func (r *courseRepository) ListPublished(ctx context.Context) ([]*entity.Course,
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, &errorhandler.Response{
+		return nil, 0, &errorhandler.Response{
 			Code:       errorhandler.DatabaseErrorCode,
-			Message:    err.Error(),
+			Message:    errorhandler.DatabaseErrorMessage,
 			StatusCode: 500,
 		}
 	}
 
-	return courses, nil
+	return courses, total, nil
 }
 
 func (r *courseRepository) ListByTeacher(ctx context.Context, teacherID uuid.UUID) ([]*entity.Course, *errorhandler.Response) {

@@ -8,11 +8,12 @@ import (
 	"github.com/lms-project/backend/internal/course/domain/values"
 	userRepository "github.com/lms-project/backend/internal/user/domain/repository"
 	"github.com/lms-project/backend/pkg/errorhandler"
+	"github.com/lms-project/backend/pkg/pagination"
 )
 
 type CourseQueryDomainServices interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*values.CourseResponse, *errorhandler.Response)
-	ListPublished(ctx context.Context) ([]*values.CourseResponse, *errorhandler.Response)
+	ListPublished(ctx context.Context, params pagination.Params) (*pagination.Page[*values.CourseResponse], *errorhandler.Response)
 	ListByTeacher(ctx context.Context, teacherID uuid.UUID) ([]*values.CourseResponse, *errorhandler.Response)
 	ListPending(ctx context.Context) ([]*values.CourseResponse, *errorhandler.Response)
 }
@@ -49,9 +50,9 @@ func (r *courseQueryServices) GetByID(ctx context.Context, id uuid.UUID) (*value
 
 }
 
-func (r *courseQueryServices) ListPublished(ctx context.Context) ([]*values.CourseResponse, *errorhandler.Response) {
+func (r *courseQueryServices) ListPublished(ctx context.Context, params pagination.Params) (*pagination.Page[*values.CourseResponse], *errorhandler.Response) {
 
-	entityCourses, err := r.courseRepository.ListPublished(ctx)
+	entityCourses, total, err := r.courseRepository.ListPublished(ctx, params.Limit, params.Offset())
 
 	if err != nil {
 		return nil, err
@@ -62,7 +63,7 @@ func (r *courseQueryServices) ListPublished(ctx context.Context) ([]*values.Cour
 		courses = append(courses, values.NewCourseResponse(course))
 	}
 
-	return courses, nil
+	return pagination.NewPage(courses, params, total), nil
 
 }
 
