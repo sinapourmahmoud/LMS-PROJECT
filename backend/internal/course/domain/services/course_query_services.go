@@ -63,7 +63,7 @@ func (r *courseQueryServices) ListPublished(ctx context.Context, params paginati
 		courses = append(courses, values.NewCourseResponse(course))
 	}
 
-	return pagination.NewPage(courses,params,total), nil
+	return pagination.NewPage(courses, params, total), nil
 
 }
 
