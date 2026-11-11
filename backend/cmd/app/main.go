@@ -20,6 +20,7 @@ import (
 	"github.com/lms-project/backend/internal/user/domain/services"
 	"github.com/lms-project/backend/internal/user/infrastructure/postgres"
 	userhttp "github.com/lms-project/backend/internal/user/interfaces/http"
+	"github.com/lms-project/backend/pkg/health"
 	"github.com/lms-project/backend/pkg/middleware"
 )
 
@@ -68,6 +69,8 @@ func main() {
 	router := gin.Default()
 
 	//routes
+
+	router.GET("/health", health.Handler(db))
 
 	// user
 	router.POST("/signup", userHandler.SignUp())
