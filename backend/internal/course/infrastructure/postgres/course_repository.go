@@ -115,7 +115,7 @@ func (r *courseRepository) ListPublished(ctx context.Context, limit int, offset 
 	if err != nil {
 		return nil, 0, &errorhandler.Response{
 			Code:       errorhandler.DatabaseErrorCode,
-			Message:    err.Error(),
+			Message:    errorhandler.DatabaseErrorMessage,
 			StatusCode: 500,
 		}
 	}
@@ -138,7 +138,7 @@ func (r *courseRepository) ListPublished(ctx context.Context, limit int, offset 
 		if err := rows.Scan(&id, &title, &description, &teacherID, &status, &createdAt, &updatedAt); err != nil {
 			return nil, 0, &errorhandler.Response{
 				Code:       errorhandler.DatabaseErrorCode,
-				Message:    err.Error(),
+				Message:    errorhandler.DatabaseErrorMessage,
 				StatusCode: 500,
 			}
 		}
@@ -154,7 +154,7 @@ func (r *courseRepository) ListPublished(ctx context.Context, limit int, offset 
 	if err := rows.Err(); err != nil {
 		return nil, 0, &errorhandler.Response{
 			Code:       errorhandler.DatabaseErrorCode,
-			Message:    err.Error(),
+			Message:    errorhandler.DatabaseErrorMessage,
 			StatusCode: 500,
 		}
 	}

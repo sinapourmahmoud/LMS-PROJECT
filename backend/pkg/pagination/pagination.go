@@ -1,4 +1,4 @@
-package pkg
+package pagination
 
 type Params struct {
 	Page  int
