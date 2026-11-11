@@ -1,6 +1,9 @@
 package http
 
 import (
+	"reflect"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -8,8 +11,7 @@ import (
 	"github.com/lms-project/backend/internal/course/domain/services"
 	userEntity "github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/pkg/errorhandler"
-	"reflect"
-	"strings"
+	"github.com/lms-project/backend/pkg/pagination"
 )
 
 var validate = validator.New()
@@ -142,7 +144,14 @@ func (h *handler) ListPublishedCourses() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 
-		res, resErr := h.courseQueryServices.ListPublished(c)
+		params, err := pagination.Parse(c.Query("page"), c.Query("limit"))
+
+		if err != nil {
+			c.JSON(400, &errorhandler.Response{Code: errorhandler.ValidationErrorCode, Message: err.Error(), StatusCode: 400})
+			return
+		}
+
+		res, resErr := h.courseQueryServices.ListPublished(c, params)
 
 		if resErr != nil {
 			c.JSON(resErr.StatusCode, resErr)
