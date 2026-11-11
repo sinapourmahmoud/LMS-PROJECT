@@ -8,6 +8,7 @@ import (
 	"github.com/lms-project/backend/internal/course/domain/entity"
 	userEntity "github.com/lms-project/backend/internal/user/domain/entity"
 	"github.com/lms-project/backend/pkg/errorhandler"
+	"github.com/lms-project/backend/pkg/pagination"
 )
 
 func TestGetCourseByID(t *testing.T) {
@@ -50,8 +51,11 @@ func TestCourseLists(t *testing.T) {
 
 	lists := map[string]func(svc CourseQueryDomainServices) (int, *errorhandler.Response, bool){
 		"ListPublished": func(svc CourseQueryDomainServices) (int, *errorhandler.Response, bool) {
-			res, err := svc.ListPublished(context.Background())
-			return len(res), err, res == nil
+			res, err := svc.ListPublished(context.Background(), pagination.Params{Page: 1, Limit: 10})
+			if res == nil {
+				return 0, err, true
+			}
+			return len(res.Items), err, res.Items == nil
 		},
 		"ListByTeacher": func(svc CourseQueryDomainServices) (int, *errorhandler.Response, bool) {
 			res, err := svc.ListByTeacher(context.Background(), teacher.GetID())
@@ -103,6 +107,30 @@ func TestCourseLists(t *testing.T) {
 
 		if resErr == nil || resErr.StatusCode != 404 || resErr.Code != errorhandler.UserNotFoundErrorCode {
 			t.Errorf("want 404 user not found, got %+v", resErr)
+		}
+	})
+}
+
+func TestListPublishedPagination(t *testing.T) {
+	teacher := newUser(userEntity.RoleTeacher)
+
+	t.Run("passes limit and offset to the repository and returns the page info", func(t *testing.T) {
+		repo := &fakeCourseRepo{
+			list:  []*entity.Course{newCourse(teacher.GetID(), entity.StatusPublished)},
+			total: 37,
+		}
+		svc := NewCourseQueryServices(repo, &fakeUserRepo{user: teacher})
+
+		res, resErr := svc.ListPublished(context.Background(), pagination.Params{Page: 3, Limit: 10})
+
+		if resErr != nil {
+			t.Fatalf("unexpected error: %+v", resErr)
+		}
+		if repo.gotLimit != 10 || repo.gotOffset != 20 {
+			t.Errorf("repository got limit=%d offset=%d, want 10 and 20", repo.gotLimit, repo.gotOffset)
+		}
+		if res.Page != 3 || res.Limit != 10 || res.Total != 37 || len(res.Items) != 1 {
+			t.Errorf("unexpected page: %+v", res)
 		}
 	})
 }
