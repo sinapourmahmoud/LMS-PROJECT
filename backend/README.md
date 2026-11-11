@@ -12,6 +12,7 @@ A learning management system (LMS) backend written in Go. Teachers create course
 - Students enroll in published courses (no duplicate enrollments) and can un-enroll
 - Students see their own enrollments; the course's teacher and admins see the course roster with the students' names
 - Teachers add ordered lessons to their courses; enrolled students, the course's teacher and admins can read them
+- Teachers schedule live class sessions for their courses and start/end them; enrolled students, the course's teacher and admins can see them
 - Paginated course list (`?page=` and `?limit=`)
 - Unit tests for the service layer and a CI/CD pipeline (GitHub Actions)
 
@@ -27,7 +28,8 @@ A learning management system (LMS) backend written in Go. Teachers create course
     │   ├── user/           # users, auth, refresh tokens
     │   ├── course/         # courses
     │   ├── enrollment/     # enrollments and the course roster
-    │   └── lesson/         # lessons inside courses
+    │   ├── lesson/         # lessons inside courses
+    │   └── session/        # scheduled live classes of a course
     │       ├── application/dto/          # request bodies
     │       ├── domain/                   # entities, repository interfaces, services, response values
     │       ├── infrastructure/postgres/  # PostgreSQL repositories
@@ -135,7 +137,7 @@ Protected endpoints need the header `Authorization: Bearer <access_token>`.
 | GET | `/courses/mine` | teacher | List your own courses |
 | GET | `/courses/pending` | admin | List courses waiting for approval |
 | PATCH | `/courses/:id/approve` | admin | Publish a pending course |
-| DELETE | `/courses/:id` | teacher (owner) or admin | Delete a course (its lessons are deleted with it) |
+| DELETE | `/courses/:id` | teacher (owner) or admin | Delete a course (its lessons and sessions are deleted with it) |
 
 #### Pagination
 
@@ -219,6 +221,38 @@ A lesson looks like this:
 
 Responses: `201` for create, `200` for read and update, `204` for delete. A student who is not enrolled, or a teacher who does not own the course, gets `403`. An unknown course or lesson gets `404`. A position that is already used in the course gets `409`.
 
+### Sessions
+
+A session is one scheduled live class of a course. Its status moves in one direction only: `scheduled` -> `live` -> `ended`.
+
+| Method | Path | Who | Description |
+| --- | --- | --- | --- |
+| POST | `/courses/:id/sessions` | teacher (owner) | Schedule a class. Body: `title`, `starts_at` (RFC 3339, must be in the future) |
+| GET | `/courses/:id/sessions` | owner teacher, admin or enrolled student | List the sessions of a course, ordered by `starts_at`, with `?page=` and `?limit=` (same response shape as the course list) |
+| GET | `/sessions/:id` | owner teacher, admin or enrolled student | Get one session |
+| PUT | `/sessions/:id` | teacher (owner) | Change `title` and `starts_at` (only while `scheduled`) |
+| POST | `/sessions/:id/start` | teacher (owner) | Move a `scheduled` session to `live` |
+| POST | `/sessions/:id/end` | teacher (owner) | Move a `live` session to `ended` |
+| DELETE | `/sessions/:id` | teacher (owner) or admin | Delete a session (204 with no body; not allowed while `live`) |
+
+A session looks like this:
+
+```json
+{
+  "id": "4a2174e3-0000-0000-0000-000000000000",
+  "course_id": "6f1c2a1e-0000-0000-0000-000000000000",
+  "title": "Live Q&A",
+  "starts_at": "2026-11-20T18:00:00Z",
+  "status": "scheduled",
+  "started_at": null,
+  "ended_at": null,
+  "created_at": "2026-11-11T10:00:00Z",
+  "updated_at": null
+}
+```
+
+Responses: `201` for create, `200` for read, update, start and end, `204` for delete. A start time in the past gets `400`. A student who is not enrolled, or a teacher who does not own the course, gets `403`. An unknown course or session gets `404`. An action that is not allowed in the current status (starting a live session, ending a scheduled one, editing or deleting a live one) gets `409`.
+
 ### Errors
 
 Errors have this shape:
@@ -243,6 +277,8 @@ Errors have this shape:
 | 404 | Not enrolled in this course | 404 |
 | 500 | Lesson not found | 404 |
 | 501 | Another lesson in this course already has this position | 409 |
+| 600 | Session not found | 404 |
+| 601 | This action is not allowed in the current state of the session | 409 |
 
 ## Creating the first admin
 
@@ -273,7 +309,7 @@ cd backend
 go test ./...
 ```
 
-The service layer (enrollments, courses and lessons) has unit tests that use fake repositories, so they need no database. The pagination helper has its own unit tests.
+The service layer (enrollments, courses, lessons and sessions) has unit tests that use fake repositories, so they need no database. The pagination helper has its own unit tests.
 
 ## CI/CD
 
@@ -304,4 +340,4 @@ migrate create -ext sql -dir migrations -seq create_something_table
 
 Never edit a migration that has already been applied; add a new one instead.
 
-Current migrations: users, refresh tokens, courses, enrollments and lessons.
+Current migrations: users, refresh tokens, courses, enrollments, lessons and sessions.

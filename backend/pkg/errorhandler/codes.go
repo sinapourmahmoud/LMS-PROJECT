@@ -80,3 +80,15 @@ const (
 	LessonNotFoundMessage      = "Lesson not found"
 	LessonPositionTakenMessage = "Another lesson in this course already has this position"
 )
+
+// Session related error codes
+const (
+	SessionNotFoundErrorCode     = 600
+	SessionInvalidStateErrorCode = 601
+)
+
+// Session related error messages
+const (
+	SessionNotFoundMessage     = "Session not found"
+	SessionInvalidStateMessage = "This action is not allowed in the current state of the session"
+)
